@@ -31,15 +31,13 @@ async function main() {
   const cases = searchcontext.filter({
     cls: "case",
     realization: false,
-    asset: "Johan Sverdrup",
+    //    asset: "Johan Sverdrup",
   });
   console.log(JSON.stringify(cases._query(), null, 2));
   console.log(`length: ${await cases.length()}`);
   console.log(await cases.uuids());
 
-  const iterator = await cases.paginate();
-  console.log(iterator);
-  for await (let c of iterator) {
+  for await (let c of cases) {
     console.log(`${c._id}: ${c._source.fmu.case.name}`);
   }
 }

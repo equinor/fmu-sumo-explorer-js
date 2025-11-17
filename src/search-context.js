@@ -361,39 +361,36 @@ class SearchContext {
     return;
   }
 
-  async paginate() {
+  [Symbol.asyncIterator]() {
     const sc = this;
     const batchsize = 100;
     let hits = [];
-    let uuids = await sc.uuids();
+    let uuids = null;
     return {
-      [Symbol.asyncIterator]: () => {
-        return {
-          next: async () => {
-            if (hits.length == 0) {
-              const batch = uuids.splice(0, batchsize);
-              if (batch.length > 0) {
-                const qdoc = {
-                  query: {
-                    ids: { values: batch },
-                  },
-                  size: batchsize,
-                  _source: sc.#select,
-                };
-                const resp = await sc.#sumo.post("/search", qdoc);
-                const map = new Map(
-                  resp.data.hits.hits.map((h) => [h["_id"], h]),
-                );
-                hits = batch.map((id) => map.get(id));
-              }
-            }
-            if (hits.length == 0) {
-              return { done: true };
-            } else {
-              return { done: false, value: hits.shift() };
-            }
-          },
-        };
+      next: async () => {
+        if (hits.length == 0) {
+          if (uuids == null) {
+            uuids = await this.uuids();
+          }
+          const batch = uuids.splice(0, batchsize);
+          if (batch.length > 0) {
+            const qdoc = {
+              query: {
+                ids: { values: batch },
+              },
+              size: batchsize,
+              _source: this.#select,
+            };
+            const resp = await this.#sumo.post("/search", qdoc);
+            const map = new Map(resp.data.hits.hits.map((h) => [h["_id"], h]));
+            hits = batch.map((id) => map.get(id));
+          }
+        }
+        if (hits.length == 0) {
+          return { done: true };
+        } else {
+          return { done: false, value: hits.shift() };
+        }
       },
     };
   }
