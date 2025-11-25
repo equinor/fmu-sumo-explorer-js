@@ -487,7 +487,7 @@ class SearchContext {
         if (hits.length == 0) {
           return { done: true };
         } else {
-          return { done: false, value: hits.shift() };
+          return { done: false, value: await this.to_sumo(hits.shift()) };
         }
       },
     };
