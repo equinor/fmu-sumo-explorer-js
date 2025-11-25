@@ -1,7 +1,7 @@
 {
-  "name": "sumo-fmu-aggregation-tester",
+  "name": "fmu-sumo-explorer",
   "version": "1.0.0",
-  "description": "Performance test application for the Sumo/FMU aggregation service.",
+  "description": "Package for working with FMU data stored in Sumo.",
   "license": "ISC",
   "author": "",
   "type": "module",
