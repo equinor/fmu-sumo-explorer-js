@@ -8,7 +8,13 @@ import { cachePersistencePlugin } from "@azure/identity-cache-persistence";
 useIdentityPlugin(cachePersistencePlugin);
 
 import SumoClient from "./sumo-client.js";
-import SearchContext from "./search-context.js";
+import Explorer from "./explorer/explorer.js";
+
+import { AxiosError } from "axios";
+
+function JS(v) {
+  return JSON.stringify(v, null, 2);
+}
 
 async function main() {
   const credential = new InteractiveBrowserCredential({
@@ -26,20 +32,61 @@ async function main() {
   const resp = await sumo.get("/userdata");
   console.log(resp.data);
 
-  const searchcontext = new SearchContext(sumo);
+  const exp = new Explorer(sumo);
 
-  const cases = searchcontext.filter({
+  // const cases = await exp.filter({ asset: "Johan Sverdrup" }).cases();
+
+  // console.log(`cases.length:${cases.length}`);
+  const cases = exp.filter({
     cls: "case",
     realization: false,
-    //    asset: "Johan Sverdrup",
+    asset: "Johan Sverdrup",
   });
-  console.log(JSON.stringify(cases._query(), null, 2));
+  console.log(JSON.stringify(await cases.query(), null, 2));
   console.log(`length: ${await cases.length()}`);
-  console.log(await cases.uuids());
 
-  for await (let c of cases) {
-    console.log(`${c._id}: ${c._source.fmu.case.name}`);
+  console.log(1, await cases.uuids());
+  console.log(2, await cases.uuids());
+
+  for await (let c of cases.select(false)) {
+    console.log(JSON.stringify(c._source, null, 2));
+    break;
   }
+
+  console.log("HERE");
+  console.log(`cases.uuids(): ${JS(await cases.uuids())}`);
+  const myCase = new Explorer(sumo).filter({
+    uuid: (await cases.filter({}).uuids())[0],
+  });
+  console.log("THERE");
+  console.log(JSON.stringify(await myCase.query(), null, 2));
+  console.log("EVERYWHERE");
+
+  console.log(
+    JSON.stringify(
+      await myCase.get_field_values_and_counts("class.keyword"),
+      null,
+      2,
+    ),
+  );
+
+  console.log(JSON.stringify(cases, null, 2));
+
+  console.log(
+    await (await exp.cases()).filter({ asset: "Johan Sverdrup" }).names(),
+  );
 }
 
 await main();
+
+// try {
+//   await main();
+// } catch (ex) {
+//   if (ex instanceof AxiosError) {
+//     console.log(`Caught error: ${ex.code}`);
+//     console.log("Data:");
+//     console.log(JSON.stringify(ex.data, null, 2));
+//   } else {
+//     console.log(JSON.stringify(ex, null, 2));
+//   }
+// }

@@ -21,11 +21,6 @@ class SumoClient {
   }
 
   async get(url, params = {}) {
-    console.dir({
-      url,
-      headers: await this.#headers(),
-      params,
-    });
     return this.#axios.get(url, {
       headers: await this.#headers(),
       params,
