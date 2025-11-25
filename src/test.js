@@ -45,6 +45,4 @@ function TestSetup() {
   return exp;
 }
 
-console.log("hello, there!");
-
 export { TestSetup };
