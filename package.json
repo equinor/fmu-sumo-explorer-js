@@ -6,8 +6,21 @@
   "author": "",
   "type": "module",
   "main": "src/index.js",
+  "module": "src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./*": "./src/*"
+  },
+  "files": [
+    "src/**/*"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "demo": "node --experimental-fetch src/demo.js",
+    "prepublishOnly": "node -e \"console.log('Packing for publish')\""
   },
   "dependencies": {
     "@azure/identity": "^4.13.0",
