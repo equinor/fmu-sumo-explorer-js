@@ -1,14 +1,10 @@
 import SearchContext from "./search-context.js";
 
 export class Cases extends SearchContext {
-  constructor(sc, uuids) {
-    super(sc.sumo, { filters: [SearchContext.gen_filter_pair(uuids, "id")] });
-  }
-
   filter(args) {
     const sc = super.filter(args);
-    const uuids = sc.get_field_values("fmu.case.uuid.keyword");
-    return new Cases(sc, uuids);
+    const { sumo, must, must_not } = sc;
+    return new Cases(sumo, { must, must_not });
   }
 
   async names() {

@@ -151,6 +151,15 @@ function _gen_filters(spec) {
 
 const _filters = _gen_filters(_filterspec);
 
+function get_filter(key) {
+  const fn = _filters[key];
+  if (fn === undefined) {
+    throw `No filter defined for "${key}"`;
+  }
+  // ELSE
+  return fn;
+}
+
 function _build_bucket_query(query, field, size) {
   return {
     size: 0,
@@ -230,7 +239,8 @@ function JS(v) {
 
 class SearchContext {
   sumo;
-  #filters;
+  must;
+  must_not;
   #hidden;
   #visible;
   #select;
@@ -240,9 +250,13 @@ class SearchContext {
   #field_values;
   #field_values_and_counts;
 
-  constructor(sumo, { filters = [], hidden = false, visible = true } = {}) {
+  constructor(
+    sumo,
+    { must = [], must_not = [], hidden = false, visible = true } = {},
+  ) {
     this.sumo = sumo;
-    this.#filters = filters;
+    this.must = must.slice();
+    this.must_not = must_not.slice();
     this.#hidden = hidden;
     this.#visible = visible;
     this.#hits = null;
@@ -252,18 +266,11 @@ class SearchContext {
     this.#field_values_and_counts = {};
   }
 
-  async query() {
-    let must = [];
-    let must_not = [];
-    for (const { fn, v } of this.#filters) {
-      const [m, mn] = fn(await v);
-      if (m !== null) must.push(m);
-      if (mn !== null) must_not.push(mn);
-    }
+  query() {
     return {
       bool: {
-        ...(must.length > 0 && { must }),
-        ...(must_not.length > 0 && { must_not }),
+        ...(this.must.length > 0 && { must: this.must }),
+        ...(this.must_not.length > 0 && { must_not: this.must_not }),
       },
     };
   }
@@ -587,10 +594,8 @@ class SearchContext {
       return Array.from(required.union(new Set(lst)));
     };
 
-    let slct = 0;
-    if (sel === false) {
-      slct = sel;
-    } else if (typeof sel == "string") {
+    let slct = null;
+    if (typeof sel == "string") {
       slct = extreq(sel);
     } else if (typeof sel == "list") {
       slct = extreq(sel);
@@ -599,26 +604,31 @@ class SearchContext {
       includes = includes ? extreq(includes) : Array.from(required);
       slct = { includes, ...excludes };
     }
-    this.#select = slct;
-    this.#cache.clear();
+    if (slct !== null) {
+      this.#select = slct;
+      this.#cache.clear();
+    }
     return this;
   }
 
-  static gen_filter_pair(value, name) {
-    const fn = _filters[name];
-    if (fn === undefined) {
-      throw `No filter defined for "${name}"`;
-    }
-    return { fn: fn, v: value };
-  }
-
   filter(args) {
-    let filters = this.#filters.slice();
+    const must = this.must.slice();
+    const must_not = this.must_not.slice();
     Object.entries(args).forEach(([key, value]) => {
-      filters.push(SearchContext.gen_filter_pair(value, key));
+      if (value !== null && value !== undefined) {
+        const fn = get_filter(key);
+        const [m, mn] = fn(value);
+        if (m) {
+          must.push(m);
+        }
+        if (mn) {
+          must_not.push(mn);
+        }
+      }
     });
     return new SearchContext(this.sumo, {
-      filters: filters,
+      must,
+      must_not,
       hidden: this.#hidden,
       visible: this.#visible,
     });
@@ -626,20 +636,32 @@ class SearchContext {
 
   async cases() {
     const { Cases } = await import("./cases.js");
-    const uuids = this.get_field_values("fmu.case.uuid.keyword");
-    return new Cases(this, uuids);
+    const uuids = await this.get_field_values("fmu.case.uuid.keyword");
+    const [must, must_not] = get_filter("id")(uuids);
+    return new Cases(this.sumo, {
+      ...(must && { must: [must] }),
+      ...(must_not && { must_not: [must_not] }),
+    });
   }
 
   async ensembles() {
     const { Ensembles } = await import("./ensembles.js");
     const uuids = await this.get_field_values("fmu.ensemble.uuid.keyword");
-    return new Ensembles(this, uuids);
+    const [must, must_not] = get_filter("id")(uuids);
+    return new Ensembles(this.sumo, {
+      ...(must && { must: [must] }),
+      ...(must_not && { must_not: [must_not] }),
+    });
   }
 
   async realizations() {
     const { Realizations } = await import("./realizations.js");
     const uuids = await this.get_field_values("fmu.realization.uuid.keyword");
-    return new Realizations(this, uuids);
+    const [must, must_not] = get_filter("id")(uuids);
+    return new Realizations(this.sumo, {
+      ...(must && { must: [must] }),
+      ...(must_not && { must_not: [must_not] }),
+    });
   }
 
   surfaces() {

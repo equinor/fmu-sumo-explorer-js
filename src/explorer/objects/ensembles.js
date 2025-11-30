@@ -1,14 +1,10 @@
 import SearchContext from "./search-context.js";
 
 export class Ensembles extends SearchContext {
-  constructor(sc, uuids) {
-    super(sc.sumo, { filters: [SearchContext.gen_filter_pair(uuids, "id")] });
-  }
-
   filter(args) {
     const sc = super.filter(args);
-    const uuids = sc.get_field_values("fmu.ensemble.uuid.keyword");
-    return new Ensembles(sc, uuids);
+    const { sumo, must, must_not } = sc;
+    return new Ensembles(sumo, { must, must_not });
   }
 
   async names() {
