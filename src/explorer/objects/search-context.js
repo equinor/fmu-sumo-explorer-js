@@ -462,7 +462,7 @@ class SearchContext {
       { ids: { values: uuids } },
       { select: this.#select },
     );
-    hits.forEach((hit) => this.#cache.put(hit._id, hit));
+    hits.forEach((hit) => this.#cache.set(hit._id, hit));
     return;
   }
 
@@ -498,6 +498,18 @@ class SearchContext {
         }
       },
     };
+  }
+
+  async get(index) {
+    const uuids = await this.uuids();
+    assert(index < uuids.length);
+    return await this.get_object(uuids[index]);
+  }
+
+  async single() {
+    const uuids = await this.uuids();
+    assert(uuids.length == 1);
+    return await this.get_object(uuids[0]);
   }
 
   _ensemble_or_realization_query(uuid) {
@@ -567,9 +579,9 @@ class SearchContext {
         }
       }
       obj = hits[0];
-      this.#cache.put(uuid, obj);
+      this.#cache.set(uuid, obj);
     }
-    return this._to_sumo(obj);
+    return await this.to_sumo(obj);
   }
 
   /**
@@ -730,6 +742,16 @@ class SearchContext {
         },
       },
     });
+  }
+
+  async get_object_by_class_and_uuid(cls, uuid) {
+    const obj = await this.get_object(uuid);
+    assert(obj.metadata["class"] == cls);
+    return obj;
+  }
+
+  async get_case_by_uuid(uuid) {
+    return await this.get_object_by_class_and_uuid("case", uuid);
   }
 
   reference_realizations() {
