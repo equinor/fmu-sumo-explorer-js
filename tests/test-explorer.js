@@ -146,7 +146,7 @@ describe("case_surfaces_size", function () {
 });
 
 describe("case_surfaces.filter", function () {
-  it("Verify counts of various surfaces in test case.", async function () {
+  it("Verifies counts of various surfaces in test case.", async function () {
     const case_surfaces = test_case.surfaces();
     assert((await case_surfaces.filter({ stage: "ensemble" }).length()) == 59);
     assert((await case_surfaces.filter({ aggregation: true }).length()) == 59);
@@ -208,5 +208,19 @@ describe("case_surfaces.filter", function () {
     assert(one_real.name() == "Valysar Fm.");
     assert(one_real.tagname() == "FACIES_Fraction_Channel");
     assert(one_real.realization() == 0);
+  });
+});
+
+describe("test_case_surfacs_pagination", function () {
+  it("Verifies that pagination retrieves all results.", async function () {
+    const s = new Set();
+    const surfs = test_case.surfaces();
+    for await (const surf of surfs) {
+      s.add(surf.id);
+    }
+    assert(
+      s.size == (await surfs.length()),
+      `${s.size} != ${await surfs.length()}`,
+    );
   });
 });
