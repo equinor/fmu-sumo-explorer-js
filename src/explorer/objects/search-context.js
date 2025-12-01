@@ -475,7 +475,7 @@ class SearchContext {
       next: async () => {
         if (hits.length == 0) {
           if (uuids == null) {
-            uuids = await this.uuids();
+            uuids = (await this.uuids()).slice();
           }
           const batch = uuids.splice(0, batchsize);
           if (batch.length > 0) {
