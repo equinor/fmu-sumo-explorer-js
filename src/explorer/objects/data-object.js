@@ -98,6 +98,10 @@ class DataObject {
     return this.metadata.data.name;
   }
 
+  relative_path() {
+    return this.metadata.file.relative_path;
+  }
+
   entity() {
     return this.metadata.fmu.entity?.uuid;
   }
