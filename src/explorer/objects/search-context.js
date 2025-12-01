@@ -102,7 +102,7 @@ function _gen_filter_complex() {
     if (value === null) {
       return [null, null];
     } else {
-      return value, null;
+      return [value, null];
     }
   };
 }
