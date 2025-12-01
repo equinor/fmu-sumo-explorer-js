@@ -9,15 +9,15 @@ class CPGridProperty extends DataObject {
   }
 
   _grid_setup() {
-    const sc = new SearchContext(this.sumo).grids.filter({
-      uuid: this.caseuuid,
-      ensemble: this.ensemblename,
-      realization: this.realization,
-      aggregation: this.aggregation,
+    const sc = new SearchContext(this.sumo).cpgrids().filter({
+      uuid: this.caseuuid(),
+      ensemble: this.ensemble(),
+      realization: this.realization(),
+      aggregation: this.aggregation(),
     });
     const should = [
       {
-        term: { "data.name.keyword": this.tagname },
+        term: { "data.name.keyword": this.tagname() },
       },
     ];
     const dgrp = this.metadata.data?.geometry?.relative_path;
@@ -38,8 +38,7 @@ class CPGridProperty extends DataObject {
 
   async grid() {
     const sc = this._grid_setup();
-    assert((await sc.length) == 1);
-    return Array.asyncFrom(sc)[0];
+    return await sc.single();
   }
 }
 

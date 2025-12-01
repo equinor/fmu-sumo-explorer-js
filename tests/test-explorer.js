@@ -224,3 +224,27 @@ describe("test_case_surfacs_pagination", function () {
     );
   });
 });
+
+describe("test_grids_and_properties", function () {
+  it("Tests relation between grids and grid properties.", async function () {
+    const cases_with_grids = (await exp.cpgrids().cases()).filter({
+      status: "keep",
+    });
+    const cases_with_gridprops = (await exp.cpgrid_properties().cases()).filter(
+      {
+        status: "keep",
+      },
+    );
+    const cgs = new Set(await cases_with_grids.uuids());
+    const cgps = new Set(await cases_with_gridprops.uuids());
+    assert(cgs.difference(cgps).size == 0 && cgps.difference(cgs).size == 0);
+    const cse = await cases_with_grids.get(0);
+    const grids = cse.cpgrids();
+    const grid = await grids.get(0);
+    assert(grid instanceof ExplorerObjects.CPGrid);
+    const gridp0 = await (await grid.grid_properties()).get(0);
+    assert(gridp0 instanceof ExplorerObjects.CPGridProperty);
+    const grid2 = await gridp0.grid();
+    assert(grid.id == grid2.id);
+  });
+});
