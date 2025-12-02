@@ -79,7 +79,7 @@ class DataObject {
   }
 
   caseuuid() {
-    return this.metadata.fmu.case.uud;
+    return this.metadata.fmu.case.uuid;
   }
 
   casename() {
