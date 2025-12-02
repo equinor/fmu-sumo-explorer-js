@@ -211,7 +211,7 @@ describe("case_surfaces.filter", function () {
   });
 });
 
-describe("test_case_surfacs_pagination", function () {
+describe("test_case_surfaces_pagination", function () {
   it("Verifies that pagination retrieves all results.", async function () {
     const s = new Set();
     const surfs = test_case.surfaces();
@@ -246,5 +246,84 @@ describe("test_grids_and_properties", function () {
     assert(gridp0 instanceof ExplorerObjects.CPGridProperty);
     const grid2 = await gridp0.grid();
     assert(grid.id == grid2.id);
+  });
+});
+
+describe("test_search_context_select", function () {
+  it("Verifies that the select() method works.", async function () {
+    const surfs = test_case.surfaces().filter({ realization: true });
+    let md;
+
+    md = (await surfs.get(0)).metadata;
+    assert("_sumo" in md);
+
+    surfs.select("fmu");
+    md = (await surfs.get(0)).metadata;
+    assert(!("_sumo" in md));
+    assert("fmu" in md);
+
+    surfs.select(["fmu"]);
+    md = (await surfs.get(0)).metadata;
+    assert(!("_sumo" in md));
+    assert("fmu" in md);
+
+    surfs.select({ excludes: ["fmu"] });
+    md = (await surfs.get(0)).metadata;
+    assert("_sumo" in md);
+    assert(!("fmu" in md));
+
+    surfs.select({ includes: ["_sumo"], excludes: ["_sumo.timestamp"] });
+    md = (await surfs.get(0)).metadata;
+    assert("_sumo" in md);
+    assert(!("fmu" in md));
+    assert(!("timestamp" in md._sumo));
+  });
+});
+
+describe("test_reference_realizations", function () {
+  it("Verifies that reference_realizations() work.", async function () {
+    const exp = new Explorer(sumo);
+    const refs = exp.filter({
+      cls: "realization",
+      complex: { term: { "fmu.realization.is_reference": true } },
+    });
+    if ((await refs.length()) > 0) {
+      const ens = await (await refs.ensembles()).get(0);
+      const ensrefs = await ens.reference_realizations();
+      assert((await ensrefs.length()) > 0);
+      assert(
+        (await ensrefs.length()) == (await ensrefs.realizationids()).length,
+      );
+    }
+  });
+});
+
+describe("test_reference_realization_fallback", function () {
+  it("Verifies that the reference_realizations() fallback works.", async function () {
+    const all_case_uuids = new Set(
+      await exp.get_field_values("fmu.case.uuid.keyword"),
+    );
+    const ref_case_uuids = new Set(
+      await exp
+        .filter({
+          cls: "realization",
+          complex: { term: { "fmu.realization.is_reference": true } },
+        })
+        .get_field_values("fmu.case.uuid.keyword"),
+    );
+    const no_ref_case_uuids = Array.from(
+      all_case_uuids.difference(ref_case_uuids),
+    );
+    if (no_ref_case_uuids.length > 0) {
+      const ens = await exp
+        .filter({ uuid: no_ref_case_uuids, realization: [0, 1] })
+        .ensembles();
+      if ((await ens.length()) > 0) {
+        const refs = await (await ens.get(0)).reference_realizations();
+        assert((await refs.length()) == 1 || (await refs.length()) == 2);
+        const refids = await refs.realizationids();
+        assert(new Set(refids).difference(new Set([0, 1])).size == 0);
+      }
+    }
   });
 });
