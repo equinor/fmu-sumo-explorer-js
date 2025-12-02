@@ -52,7 +52,7 @@ class Ensemble extends SearchContext {
     if ((await sc.length()) > 0) {
       return sc;
     } // ELSE
-    return await self.filter({ realization: [0, 1] }).realizations();
+    return await this.filter({ realization: [0, 1] }).realizations();
   }
 }
 
