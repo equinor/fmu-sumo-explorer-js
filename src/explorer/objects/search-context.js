@@ -609,12 +609,12 @@ class SearchContext {
     let slct = null;
     if (typeof sel == "string") {
       slct = extreq(sel);
-    } else if (typeof sel == "list") {
+    } else if (Array.isArray(sel)) {
       slct = extreq(sel);
     } else if (typeof sel == "object") {
       let { excludes, includes } = sel;
-      includes = includes ? extreq(includes) : Array.from(required);
-      slct = { includes, ...excludes };
+      includes = includes ? extreq(includes) : null;
+      slct = { ...(includes && { includes }), ...(excludes && { excludes }) };
     }
     if (slct !== null) {
       this.#select = slct;
