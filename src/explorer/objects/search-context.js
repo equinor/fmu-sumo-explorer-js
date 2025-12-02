@@ -791,7 +791,7 @@ class SearchContext {
   __prepare_verify_aggregation_query() {
     let aggs = {};
     for (const field of [
-      "class",
+      "class.keyword",
       "fmu.case.uuid",
       "fmu.ensemble.name",
       "fmu.entity.uuid",
