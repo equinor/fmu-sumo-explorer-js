@@ -267,10 +267,17 @@ class SearchContext {
   }
 
   query() {
+    let must = this.must.slice();
+    let must_not = this.must_not.slice();
+    if (this.#visible && !this.#hidden) {
+      must_not.push({ term: { "_sumo.hidden": true } });
+    } else if (!this.#visible && this.#hidden) {
+      must.push({ term: { "_sumo.hidden": true } });
+    }
     return {
       bool: {
-        ...(this.must.length > 0 && { must: this.must }),
-        ...(this.must_not.length > 0 && { must_not: this.must_not }),
+        ...(must.length > 0 && { must }),
+        ...(must_not.length > 0 && { must_not }),
       },
     };
   }
@@ -646,6 +653,33 @@ class SearchContext {
     });
   }
 
+  hidden() {
+    return new SearchContext(this.sumo, {
+      must: this.must,
+      must_not: this.must_not,
+      hidden: true,
+      visible: false,
+    });
+  }
+
+  visible() {
+    return new SearchContext(this.sumo, {
+      must: this.must,
+      must_not: this.must_not,
+      hidden: true,
+      visible: false,
+    });
+  }
+
+  all() {
+    return new SearchContext(this.sumo, {
+      must: this.must,
+      must_not: this.must_not,
+      hidden: true,
+      visible: true,
+    });
+  }
+
   async cases() {
     const { Cases } = await import("./cases.js");
     const uuids = await this.get_field_values("fmu.case.uuid.keyword");
@@ -752,6 +786,147 @@ class SearchContext {
 
   async get_case_by_uuid(uuid) {
     return await this.get_object_by_class_and_uuid("case", uuid);
+  }
+
+  __prepare_verify_aggregation_query() {
+    let aggs = {};
+    for (const field of [
+      "class",
+      "fmu.case.uuid",
+      "fmu.ensemble.name",
+      "fmu.entity.uuid",
+    ]) {
+      aggs[field] = { terms: { field: field + ".keyword", size: 1 } };
+    }
+    return {
+      query: this.query(),
+      size: 0,
+      track_total_hits: true,
+      aggs,
+    };
+  }
+
+  __verify_aggregation_operation(sres) {
+    const tot_hits = sres.hits.total.value;
+    if (tot_hits == 0) {
+      throw "No matching realizations found.";
+    }
+    let conflicts = [];
+    for (let [k, v] of Object.entries(sres.aggregations)) {
+      if (
+        v.sum_other_doc_count ||
+        (v.buckets &&
+          v.buckets.length > 0 &&
+          v.buckets[0].doc_count != tot_hits)
+      ) {
+        conflicts.push(k);
+      }
+    }
+    if (conflicts.length > 0) {
+      throw `Conflicting values for ${conflicts}`;
+    }
+    const entityuuid = sres.aggregations["fmu.entity.uuid"]["buckets"][0].key;
+    const caseuuid = sres.aggregations["fmu.case.uuid"]["buckets"][0].key;
+    const ensemblename =
+      sres.aggregations["fmu.ensemble.name"]["buckets"][0].key;
+    const classname = sres.aggregations["class"]["buckets"][0].key;
+    return { caseuuid, ensemblename, entityuuid, classname, tot_hits };
+  }
+
+  async _verify_aggregation_operation(columns) {
+    const sc = this.filter({ column: columns });
+    const query = sc.__prepare_verify_aggregation_query();
+    const sres = await sc.sumo.post("/search", query);
+    const { caseuuid, ensemblename, entityuuid, classname, tot_hits } =
+      this.__verify_aggregation_operation(sres.data);
+    if (
+      classname != "surface" &&
+      Array.isArray(columns) &&
+      columns.length == 1
+    ) {
+      const sc = new SearchContext(this.sumo).filter({
+        cls: classname,
+        realization: true,
+        entity: entityuuid,
+        ensemble: ensemblename,
+        column: columns,
+      });
+      if ((await sc.length()) != tot_hits) {
+        throw "Filtering on realization is not allowed for table and parameter aggregation.";
+      }
+    }
+    return { caseuuid, ensemblename, entityuuid, classname, tot_hits };
+  }
+
+  __prepare_aggregation_spec({
+    caseuuid,
+    ensemblename,
+    entityuuid,
+    classname,
+    operation,
+    columns,
+  }) {
+    const spec = {
+      case_uuid: caseuuid,
+      class: classname,
+      entity_uuid: entityuuid,
+      ensemble_name: ensemblename,
+      operations: [operation],
+    };
+    if (columns) {
+      spec.columns = columns;
+    }
+    return spec;
+  }
+
+  async _aggregate({ operation, columns, no_wait = false }) {
+    const { caseuuid, ensemblename, entityuuid, classname } =
+      await this._verify_aggregation_operation(columns);
+    const spec = this.__prepare_aggregation_spec({
+      caseuuid,
+      ensemblename,
+      entityuuid,
+      classname,
+      operation,
+      columns,
+    });
+    spec.object_ids = await this.uuids();
+    const res = await this.sumo.post("/aggregations", spec);
+    if (no_wait) {
+      return res;
+    }
+    const pollres = await this.sumo.poll(res);
+    return this.to_sumo(pollres.data);
+  }
+
+  async aggregate({ operation, columns, no_wait = false }) {
+    assert(
+      !columns || columns.length == 1,
+      "Exactly one column required for collection aggregation.",
+    );
+    let sc = this.filter({ realization: true, column: columns });
+    if ((await this.hidden().length()) > 0) {
+      sc = sc.hidden();
+    }
+    return sc._aggregate({ columns, operation, no_wait });
+  }
+
+  async batch_aggregate({ operation, columns, no_wait = false }) {
+    assert(operation == "collection");
+    assert(Array.isArray(columns) && columns.length > 0);
+    assert(
+      columns.length < 1000,
+      "Maximum 1000 columns allowed for a single call to batch_aggregate.",
+    );
+    let sc = this.filter({ realization: true, column: columns });
+    if ((await sc.hidden().length()) > 0) {
+      sc = sc.hidden();
+    }
+    const res = sc._aggregate({ operation, columns, no_wait });
+    if (no_wait) {
+      return res;
+    }
+    return this.sumo.poll(res);
   }
 
   reference_realizations() {
@@ -881,7 +1056,7 @@ class SearchContext {
    * List of entity uuids.
    */
   async entities() {
-    return self.get_field_values("fmu.entity.uuid.keyword");
+    return this.get_field_values("fmu.entity.uuid.keyword");
   }
 }
 

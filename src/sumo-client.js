@@ -1,12 +1,16 @@
 import axios from "axios";
 
+import assert from "node:assert";
+
 class SumoClient {
   #axios;
+  #baseUrl;
   #credential;
   #scope;
   constructor(baseUrl, credential, scope) {
     this.#credential = credential;
     this.#scope = scope;
+    this.#baseUrl = baseUrl;
     this.#axios = axios.create({
       baseURL: baseUrl,
       allowAbsoluteUrls: false,
@@ -46,6 +50,34 @@ class SumoClient {
       headers: await this.#headers,
       params,
     });
+  }
+
+  _get_retry_details(resp) {
+    assert(resp.status == 202, "Incorrect status code: expected 202");
+    const location = resp.headers.location;
+    assert(location != undefined, "Missing header: Location");
+    assert(location.startsWith(this.#baseUrl));
+    const retry_after = resp.headers["retry-after"];
+    assert(retry_after != undefined, "Missing header: Retry-After");
+    const rel_loc = location.slice(this.#baseUrl.length);
+    const retry_after_int = parseInt(retry_after, 10);
+    return [rel_loc, retry_after_int];
+  }
+
+  async poll(response_in, timeout = null) {
+    let [location, retry_after] = this._get_retry_details(response_in);
+    const expiry = timeout && new Date(Date.now() + timeout * 1000);
+    while (true) {
+      await new Promise((resolve) => setTimeout(resolve, retry_after * 1000));
+      const response = this.get(location);
+      if (response.status != 202) {
+        return response;
+      }
+      if (expiry && Date.now() > expiry) {
+        throw "No response within specified timeout.";
+      }
+      [location, retry_after] = this._get_retry_details(response_in);
+    }
   }
 }
 
