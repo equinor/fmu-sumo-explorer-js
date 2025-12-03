@@ -4,6 +4,7 @@ import assert from "node:assert";
 
 class SumoClient {
   #axios;
+  #baseUrl;
   #credential;
   #scope;
   constructor(baseUrl, credential, scope) {
