@@ -267,10 +267,17 @@ class SearchContext {
   }
 
   query() {
+    let must = this.must.slice();
+    let must_not = this.must_not.slice();
+    if (this.#visible && !this.#hidden) {
+      must_not.push({ term: { "_sumo.hidden": true } });
+    } else if (!this.#visible && this.#hidden) {
+      must.push({ term: { "_sumo.hidden": true } });
+    }
     return {
       bool: {
-        ...(this.must.length > 0 && { must: this.must }),
-        ...(this.must_not.length > 0 && { must_not: this.must_not }),
+        ...(must.length > 0 && { must }),
+        ...(must_not.length > 0 && { must_not }),
       },
     };
   }
@@ -646,6 +653,33 @@ class SearchContext {
     });
   }
 
+  hidden() {
+    return new SearchContext(this.sumo, {
+      must: this.must,
+      must_not: this.must_not,
+      hidden: true,
+      visible: false,
+    });
+  }
+
+  visible() {
+    return new SearchContext(this.sumo, {
+      must: this.must,
+      must_not: this.must_not,
+      hidden: true,
+      visible: false,
+    });
+  }
+
+  all() {
+    return new SearchContext(this.sumo, {
+      must: this.must,
+      must_not: this.must_not,
+      hidden: true,
+      visible: true,
+    });
+  }
+
   async cases() {
     const { Cases } = await import("./cases.js");
     const uuids = await this.get_field_values("fmu.case.uuid.keyword");
@@ -757,7 +791,7 @@ class SearchContext {
   __prepare_verify_aggregation_query() {
     let aggs = {};
     for (const field of [
-      "class.keyword",
+      "class",
       "fmu.case.uuid",
       "fmu.ensemble.name",
       "fmu.entity.uuid",
@@ -781,7 +815,9 @@ class SearchContext {
     for (let [k, v] of Object.entries(sres.aggregations)) {
       if (
         v.sum_other_doc_count ||
-        (v.buckets && v.buckets[0].doc_count != tot_hits)
+        (v.buckets &&
+          v.buckets.length > 0 &&
+          v.buckets[0].doc_count != tot_hits)
       ) {
         conflicts.push(k);
       }
@@ -789,10 +825,11 @@ class SearchContext {
     if (conflicts.length > 0) {
       throw `Conflicting values for ${conflicts}`;
     }
-    const entityuuid = sres.aggregations["fmu.entity.uuid"]["buckets"][0];
-    const caseuuid = sres.aggregations["fmu.case.uuid"]["buckets"][0];
-    const ensemblename = sres.aggregations["fmu.ensemble.name"]["buckets"][0];
-    const classname = sres.aggregations["class"]["buckets"][0];
+    const entityuuid = sres.aggregations["fmu.entity.uuid"]["buckets"][0].key;
+    const caseuuid = sres.aggregations["fmu.case.uuid"]["buckets"][0].key;
+    const ensemblename =
+      sres.aggregations["fmu.ensemble.name"]["buckets"][0].key;
+    const classname = sres.aggregations["class"]["buckets"][0].key;
     return { caseuuid, ensemblename, entityuuid, classname, tot_hits };
   }
 
@@ -814,7 +851,7 @@ class SearchContext {
         ensemble: ensemblename,
         column: columns,
       });
-      if ((await sc.length) != tot_hits) {
+      if ((await sc.length()) != tot_hits) {
         throw "Filtering on realization is not allowed for table and parameter aggregation.";
       }
     }
@@ -854,12 +891,12 @@ class SearchContext {
       columns,
     });
     spec.object_ids = await this.uuids();
-    const res = await self.sumo.post("/aggregations", spec);
+    const res = await this.sumo.post("/aggregations", spec);
     if (no_wait) {
       return res;
     }
-    res = await self.sumo.poll(res);
-    return this.to_sumo(res.data);
+    const pollres = await this.sumo.poll(res);
+    return this.to_sumo(pollres.data);
   }
 
   async aggregate({ operation, columns, no_wait = false }) {
@@ -867,8 +904,8 @@ class SearchContext {
       !columns || columns.length == 1,
       "Exactly one column required for collection aggregation.",
     );
-    let sc = self.filter({ realization: true, column: columns });
-    if ((await self.hidden().length()) > 0) {
+    let sc = this.filter({ realization: true, column: columns });
+    if ((await this.hidden().length()) > 0) {
       sc = sc.hidden();
     }
     return sc._aggregate({ columns, operation, no_wait });
@@ -1019,7 +1056,7 @@ class SearchContext {
    * List of entity uuids.
    */
   async entities() {
-    return self.get_field_values("fmu.entity.uuid.keyword");
+    return this.get_field_values("fmu.entity.uuid.keyword");
   }
 }
 
