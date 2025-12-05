@@ -480,33 +480,17 @@ class SearchContext {
 
   [Symbol.asyncIterator]() {
     const sc = this;
-    const batchsize = 100;
-    let hits = [];
-    let uuids = null;
+    let index = 0;
     return {
       next: async () => {
-        if (hits.length == 0) {
-          if (uuids == null) {
-            uuids = (await this.uuids()).slice();
-          }
-          const batch = uuids.splice(0, batchsize);
-          if (batch.length > 0) {
-            const qdoc = {
-              query: {
-                ids: { values: batch },
-              },
-              size: batchsize,
-              _source: this.#select,
-            };
-            const resp = await this.sumo.post("/search", qdoc);
-            const map = new Map(resp.data.hits.hits.map((h) => [h["_id"], h]));
-            hits = batch.map((id) => map.get(id));
-          }
-        }
-        if (hits.length == 0) {
-          return { done: true };
+        await sc.uuids(); // ensure that we have a list of uuids
+        if (index < this.#hits.length) {
+          await this._maybe_prefetch(index);
+          const obj = await sc.get(index);
+          index++;
+          return { done: false, value: obj };
         } else {
-          return { done: false, value: await this.to_sumo(hits.shift()) };
+          return { done: true };
         }
       },
     };
@@ -556,12 +540,14 @@ class SearchContext {
 
   _patch_ensemble_or_realization(uuid, hits) {
     if (hits.length === 1) {
-      const obj = hits[0]._source;
-      if (obj.fmu.ensemble.uuid == uuid) {
-        obj.class = "ensemble";
-        delete obj.fmu.realization;
-      } else if (obj.fmu.realization.uuid == "realization") {
-        obj.class = "realization";
+      const obj = hits[0];
+      obj._id = uuid;
+      const src = obj._source;
+      if (src.fmu.ensemble.uuid == uuid) {
+        src.class = "ensemble";
+        delete src.fmu.realization;
+      } else if (src.fmu.realization.uuid == "realization") {
+        src.class = "realization";
       }
     }
   }
@@ -707,8 +693,8 @@ class SearchContext {
     const { Realizations } = await import("./realizations.js");
     const { must, must_not } = this;
     return new Realizations(this.sumo, {
-      ...(must && { must: [must] }),
-      ...(must_not && { must_not: [must_not] }),
+      must,
+      must_not,
     });
   }
 
