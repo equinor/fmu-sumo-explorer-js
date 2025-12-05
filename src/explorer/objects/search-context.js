@@ -183,6 +183,30 @@ function _build_bucket_query_simple(query, field, size) {
   };
 }
 
+function _build_composite_query(query, fields, size) {
+  return {
+    size: 0,
+    query,
+    aggs: {
+      composite: {
+        composite: {
+          size,
+          sources: Object.entries(fields).map(([k, v]) => ({
+            [k]: { terms: { field: v } },
+          })),
+        },
+      },
+    },
+  };
+}
+
+function _extract_composite_results(res) {
+  const aggs = res.aggregations.composite;
+  const after_key = aggs.after_key;
+  const buckets = aggs.buckets.map(({ key }) => key);
+  return [buckets, after_key];
+}
+
 function _set_after_key(query, field, after_key) {
   if (after_key !== null) {
     query.aggs[field].composite.after = after_key;
@@ -394,10 +418,10 @@ class SearchContext {
     query = _build_bucket_query(await this.query(), field, buckets_per_batch);
     let all_buckets = [];
     let after_key = null;
-    const pit = Pit.create(this.sumo, "1m");
+    const pit = await Pit.create(this.sumo, "1m");
     while (true) {
       query = pit.stamp_query(_set_after_key(query, field, after_key));
-      res = (await this.sumo.post("/search", query)).data;
+      const res = (await this.sumo.post("/search", query)).data;
       pit.update_from_result(res);
       let buckets = res.aggregations[field].buckets;
       after_key = res.aggregations[field].after_key;
@@ -448,6 +472,30 @@ class SearchContext {
     return res.aggregations.values.buckets.map(({ key }) => key);
   }
 
+  async get_composite_agg(fields) {
+    const buckets_per_batch = 1000;
+    let query = _build_composite_query(this.query(), fields, buckets_per_batch);
+    let all_buckets = [];
+    let after_key = null;
+    const pit = await Pit.create(this.sumo, "1m");
+    while (true) {
+      query = pit.stamp_query(_set_after_key(query, "composite", after_key));
+      const res = (await this.sumo.post("/search", query)).data;
+      pit.update_from_result(res);
+      let [buckets, a_k] = _extract_composite_results(res);
+      after_key = a_k;
+      if (buckets.length == 0) {
+        break;
+      }
+      all_buckets = all_buckets.concat(buckets);
+      if (buckets.length < buckets_per_batch) {
+        break;
+      }
+    }
+    await pit.destroy();
+    return all_buckets;
+  }
+
   async getuuids() {
     return await this._search_all();
   }
@@ -484,8 +532,8 @@ class SearchContext {
     return {
       next: async () => {
         await sc.uuids(); // ensure that we have a list of uuids
-        if (index < this.#hits.length) {
-          await this._maybe_prefetch(index);
+        if (index < sc.#hits.length) {
+          await sc._maybe_prefetch(index);
           const obj = await sc.get(index);
           index++;
           return { done: false, value: obj };

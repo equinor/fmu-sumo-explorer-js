@@ -47,7 +47,7 @@ class SumoClient {
 
   async delete(url, params) {
     return this.#axios.delete(url, {
-      headers: await this.#headers,
+      headers: await this.#headers(),
       params,
     });
   }
