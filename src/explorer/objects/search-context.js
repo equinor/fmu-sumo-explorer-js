@@ -309,9 +309,10 @@ class SearchContext {
       cpgrid: CPGrid,
       cpgrid_property: CPGridProperty,
       ensemble: Ensemble,
+      iteration: Ensemble,
       realization: Realization,
     }[cls];
-    assert(cls !== undefined);
+    assert(constructor !== undefined);
     return new constructor(this.sumo, obj);
   }
 
@@ -447,9 +448,13 @@ class SearchContext {
     return res.aggregations.values.buckets.map(({ key }) => key);
   }
 
+  async getuuids() {
+    return await this._search_all();
+  }
+
   async uuids() {
     if (this.#hits === null) {
-      this.#hits = await this._search_all();
+      this.#hits = await this.getuuids();
     }
     return this.#hits;
   }
