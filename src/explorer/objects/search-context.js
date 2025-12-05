@@ -687,28 +687,25 @@ class SearchContext {
 
   async cases() {
     const { Cases } = await import("./cases.js");
-    const uuids = await this.get_field_values("fmu.case.uuid.keyword");
-    const [must, must_not] = get_filter("id")(uuids);
+    const { must, must_not } = this;
     return new Cases(this.sumo, {
-      ...(must && { must: [must] }),
-      ...(must_not && { must_not: [must_not] }),
+      must,
+      must_not,
     });
   }
 
   async ensembles() {
     const { Ensembles } = await import("./ensembles.js");
-    const uuids = await this.get_field_values("fmu.ensemble.uuid.keyword");
-    const [must, must_not] = get_filter("id")(uuids);
+    const { must, must_not } = this;
     return new Ensembles(this.sumo, {
-      ...(must && { must: [must] }),
-      ...(must_not && { must_not: [must_not] }),
+      must,
+      must_not,
     });
   }
 
   async realizations() {
     const { Realizations } = await import("./realizations.js");
-    const uuids = await this.get_field_values("fmu.realization.uuid.keyword");
-    const [must, must_not] = get_filter("id")(uuids);
+    const { must, must_not } = this;
     return new Realizations(this.sumo, {
       ...(must && { must: [must] }),
       ...(must_not && { must_not: [must_not] }),

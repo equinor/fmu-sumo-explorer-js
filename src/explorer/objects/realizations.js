@@ -5,6 +5,10 @@ export class Realizations extends SearchContext {
     return this.get_field_values("fmu.realization.uuid.keyword");
   }
 
+  async length() {
+    return (await this.uuids()).length;
+  }
+
   filter(args) {
     const sc = super.filter(args);
     const { sumo, must, must_not } = sc;
