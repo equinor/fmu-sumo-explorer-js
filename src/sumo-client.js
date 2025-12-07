@@ -69,14 +69,14 @@ class SumoClient {
     const expiry = timeout && new Date(Date.now() + timeout * 1000);
     while (true) {
       await new Promise((resolve) => setTimeout(resolve, retry_after * 1000));
-      const response = this.get(location);
+      const response = await this.get(location);
       if (response.status != 202) {
         return response;
       }
       if (expiry && Date.now() > expiry) {
         throw "No response within specified timeout.";
       }
-      [location, retry_after] = this._get_retry_details(response_in);
+      [location, retry_after] = this._get_retry_details(response);
     }
   }
 }
