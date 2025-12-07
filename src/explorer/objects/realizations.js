@@ -38,6 +38,7 @@ export class Realizations extends SearchContext {
       ...this.#prototype,
       ...{
         fmu: {
+          ensemble: this.#prototype.fmu.ensemble,
           realization: b,
         },
       },
