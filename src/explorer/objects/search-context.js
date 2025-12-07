@@ -578,7 +578,6 @@ class SearchContext {
           "access",
           "masterdata",
           "fmu.case",
-          "fmu.iteration",
           "fmu.ensemble",
           "fmu.realization",
         ],
