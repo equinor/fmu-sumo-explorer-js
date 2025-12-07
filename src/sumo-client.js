@@ -7,6 +7,7 @@ class SumoClient {
   #baseUrl;
   #credential;
   #scope;
+  #cachedtoken;
   constructor(baseUrl, credential, scope) {
     this.#credential = credential;
     this.#scope = scope;
@@ -15,10 +16,18 @@ class SumoClient {
       baseURL: baseUrl,
       allowAbsoluteUrls: false,
     });
+    this.#cachedtoken = null;
   }
 
   async #headers() {
-    const token = (await this.#credential.getToken(this.#scope)).token;
+    if (
+      this.#cachedtoken == null ||
+      this.#cachedtoken.expiresOnTimestamp < Date.now() - 1000
+    ) {
+      this.#cachedtoken = await this.#credential.getToken(this.#scope);
+    }
+
+    const token = this.#cachedtoken.token;
     return {
       Authorization: `Bearer ${token}`,
     };
