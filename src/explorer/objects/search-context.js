@@ -183,6 +183,30 @@ function _build_bucket_query_simple(query, field, size) {
   };
 }
 
+function _build_composite_query(query, fields, size) {
+  return {
+    size: 0,
+    query,
+    aggs: {
+      composite: {
+        composite: {
+          size,
+          sources: Object.entries(fields).map(([k, v]) => ({
+            [k]: { terms: { field: v } },
+          })),
+        },
+      },
+    },
+  };
+}
+
+function _extract_composite_results(res) {
+  const aggs = res.aggregations.composite;
+  const after_key = aggs.after_key;
+  const buckets = aggs.buckets.map(({ key }) => key);
+  return [buckets, after_key];
+}
+
 function _set_after_key(query, field, after_key) {
   if (after_key !== null) {
     query.aggs[field].composite.after = after_key;
@@ -309,9 +333,10 @@ class SearchContext {
       cpgrid: CPGrid,
       cpgrid_property: CPGridProperty,
       ensemble: Ensemble,
+      iteration: Ensemble,
       realization: Realization,
     }[cls];
-    assert(cls !== undefined);
+    assert(constructor !== undefined);
     return new constructor(this.sumo, obj);
   }
 
@@ -393,10 +418,10 @@ class SearchContext {
     query = _build_bucket_query(await this.query(), field, buckets_per_batch);
     let all_buckets = [];
     let after_key = null;
-    const pit = Pit.create(this.sumo, "1m");
+    const pit = await Pit.create(this.sumo, "1m");
     while (true) {
       query = pit.stamp_query(_set_after_key(query, field, after_key));
-      res = (await this.sumo.post("/search", query)).data;
+      const res = (await this.sumo.post("/search", query)).data;
       pit.update_from_result(res);
       let buckets = res.aggregations[field].buckets;
       after_key = res.aggregations[field].after_key;
@@ -447,9 +472,37 @@ class SearchContext {
     return res.aggregations.values.buckets.map(({ key }) => key);
   }
 
+  async get_composite_agg(fields) {
+    const buckets_per_batch = 1000;
+    let query = _build_composite_query(this.query(), fields, buckets_per_batch);
+    let all_buckets = [];
+    let after_key = null;
+    const pit = await Pit.create(this.sumo, "1m");
+    while (true) {
+      query = pit.stamp_query(_set_after_key(query, "composite", after_key));
+      const res = (await this.sumo.post("/search", query)).data;
+      pit.update_from_result(res);
+      let [buckets, a_k] = _extract_composite_results(res);
+      after_key = a_k;
+      if (buckets.length == 0) {
+        break;
+      }
+      all_buckets = all_buckets.concat(buckets);
+      if (buckets.length < buckets_per_batch) {
+        break;
+      }
+    }
+    await pit.destroy();
+    return all_buckets;
+  }
+
+  async getuuids() {
+    return await this._search_all();
+  }
+
   async uuids() {
     if (this.#hits === null) {
-      this.#hits = await this._search_all();
+      this.#hits = await this.getuuids();
     }
     return this.#hits;
   }
@@ -475,33 +528,17 @@ class SearchContext {
 
   [Symbol.asyncIterator]() {
     const sc = this;
-    const batchsize = 100;
-    let hits = [];
-    let uuids = null;
+    let index = 0;
     return {
       next: async () => {
-        if (hits.length == 0) {
-          if (uuids == null) {
-            uuids = (await this.uuids()).slice();
-          }
-          const batch = uuids.splice(0, batchsize);
-          if (batch.length > 0) {
-            const qdoc = {
-              query: {
-                ids: { values: batch },
-              },
-              size: batchsize,
-              _source: this.#select,
-            };
-            const resp = await this.sumo.post("/search", qdoc);
-            const map = new Map(resp.data.hits.hits.map((h) => [h["_id"], h]));
-            hits = batch.map((id) => map.get(id));
-          }
-        }
-        if (hits.length == 0) {
-          return { done: true };
+        await sc.uuids(); // ensure that we have a list of uuids
+        if (index < sc.#hits.length) {
+          await sc._maybe_prefetch(index);
+          const obj = await sc.get(index);
+          index++;
+          return { done: false, value: obj };
         } else {
-          return { done: false, value: await this.to_sumo(hits.shift()) };
+          return { done: true };
         }
       },
     };
@@ -541,7 +578,6 @@ class SearchContext {
           "access",
           "masterdata",
           "fmu.case",
-          "fmu.iteration",
           "fmu.ensemble",
           "fmu.realization",
         ],
@@ -551,12 +587,14 @@ class SearchContext {
 
   _patch_ensemble_or_realization(uuid, hits) {
     if (hits.length === 1) {
-      const obj = hits[0]._source;
-      if (obj.fmu.ensemble.uuid == uuid) {
-        obj.class = "ensemble";
-        delete obj.fmu.realization;
-      } else if (obj.fmu.realization.uuid == "realization") {
-        obj.class = "realization";
+      const obj = hits[0];
+      obj._id = uuid;
+      const src = obj._source;
+      if (src.fmu.ensemble.uuid == uuid) {
+        src.class = "ensemble";
+        delete src.fmu.realization;
+      } else if (src.fmu.realization.uuid == "realization") {
+        src.class = "realization";
       }
     }
   }
@@ -682,31 +720,28 @@ class SearchContext {
 
   async cases() {
     const { Cases } = await import("./cases.js");
-    const uuids = await this.get_field_values("fmu.case.uuid.keyword");
-    const [must, must_not] = get_filter("id")(uuids);
+    const { must, must_not } = this;
     return new Cases(this.sumo, {
-      ...(must && { must: [must] }),
-      ...(must_not && { must_not: [must_not] }),
+      must,
+      must_not,
     });
   }
 
   async ensembles() {
     const { Ensembles } = await import("./ensembles.js");
-    const uuids = await this.get_field_values("fmu.ensemble.uuid.keyword");
-    const [must, must_not] = get_filter("id")(uuids);
+    const { must, must_not } = this;
     return new Ensembles(this.sumo, {
-      ...(must && { must: [must] }),
-      ...(must_not && { must_not: [must_not] }),
+      must,
+      must_not,
     });
   }
 
   async realizations() {
     const { Realizations } = await import("./realizations.js");
-    const uuids = await this.get_field_values("fmu.realization.uuid.keyword");
-    const [must, must_not] = get_filter("id")(uuids);
+    const { must, must_not } = this;
     return new Realizations(this.sumo, {
-      ...(must && { must: [must] }),
-      ...(must_not && { must_not: [must_not] }),
+      must,
+      must_not,
     });
   }
 

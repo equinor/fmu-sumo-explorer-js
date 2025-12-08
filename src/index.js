@@ -4,7 +4,16 @@ import SumoClient from "./sumo-client.js";
 import Explorer from "./explorer/explorer.js";
 import * as ExplorerObjects from "./explorer/objects.js";
 
-export { GetConfig, GetCredential, SumoClient, Explorer, ExplorerObjects };
+import GetExplorer from "./get-explorer.js";
+
+export {
+  GetConfig,
+  GetCredential,
+  SumoClient,
+  Explorer,
+  ExplorerObjects,
+  GetExplorer,
+};
 
 export default {
   GetConfig,
@@ -12,4 +21,5 @@ export default {
   SumoClient,
   Explorer,
   ExplorerObjects,
+  GetExplorer,
 };
