@@ -1,4 +1,5 @@
 import axios from "axios";
+import axiosRetry from "axios-retry";
 
 import assert from "node:assert";
 
@@ -17,6 +18,7 @@ class SumoClient {
       allowAbsoluteUrls: false,
     });
     this.#cachedtoken = null;
+    axiosRetry(this.#axios, { retryDelay: axiosRetry.exponentialDelay });
   }
 
   async #headers() {
