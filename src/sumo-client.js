@@ -18,7 +18,12 @@ class SumoClient {
       allowAbsoluteUrls: false,
     });
     this.#cachedtoken = null;
-    axiosRetry(this.#axios, { retryDelay: axiosRetry.exponentialDelay });
+    axiosRetry(this.#axios, {
+      retryDelay: axiosRetry.exponentialDelay,
+      retryCondition: (error) =>
+        axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+        error.response?.status === 429,
+    });
   }
 
   async #headers() {
