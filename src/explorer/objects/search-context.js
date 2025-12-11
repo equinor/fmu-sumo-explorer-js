@@ -874,23 +874,32 @@ class SearchContext {
     const sres = await sc.sumo.post("/search", query);
     const { caseuuid, ensemblename, entityuuid, classname, tot_hits } =
       this.__verify_aggregation_operation(sres.data);
+    const sc2 = new SearchContext(this.sumo).filter({
+      cls: classname,
+      realization: true,
+      entity: entityuuid,
+      ensemble: ensemblename,
+      column: columns,
+    });
+    const sc2_len = await sc2.length();
+    let need_object_uuids = sc2_len != tot_hits;
     if (
       classname != "surface" &&
       Array.isArray(columns) &&
       columns.length == 1
     ) {
-      const sc = new SearchContext(this.sumo).filter({
-        cls: classname,
-        realization: true,
-        entity: entityuuid,
-        ensemble: ensemblename,
-        column: columns,
-      });
-      if ((await sc.length()) != tot_hits) {
-        throw "Filtering on realization is not allowed for table and parameter aggregation.";
+      if (sc2_len != tot_hits) {
+        throw `Filtering on realization is not allowed for table and parameter aggregation. Case: ${caseuuid}; ensemble: ${ensemblename}; entity: ${entityuuid}; columns: ${columns}; ${sc2_len} != ${tot_hits}`;
       }
     }
-    return { caseuuid, ensemblename, entityuuid, classname, tot_hits };
+    return {
+      caseuuid,
+      ensemblename,
+      entityuuid,
+      classname,
+      tot_hits,
+      need_object_uuids,
+    };
   }
 
   __prepare_aggregation_spec({
@@ -915,7 +924,7 @@ class SearchContext {
   }
 
   async _aggregate({ operation, columns, no_wait = false }) {
-    const { caseuuid, ensemblename, entityuuid, classname } =
+    const { caseuuid, ensemblename, entityuuid, classname, need_object_uuids } =
       await this._verify_aggregation_operation(columns);
     const spec = this.__prepare_aggregation_spec({
       caseuuid,
@@ -925,7 +934,9 @@ class SearchContext {
       operation,
       columns,
     });
-    spec.object_ids = await this.uuids();
+    if (need_object_uuids) {
+      spec.object_ids = await this.uuids();
+    }
     const res = await this.sumo.post("/aggregations", spec);
     if (no_wait) {
       return res;
