@@ -889,7 +889,7 @@ class SearchContext {
       columns.length == 1
     ) {
       if (sc2_len != tot_hits) {
-        throw "Filtering on realization is not allowed for table and parameter aggregation.";
+        throw `Filtering on realization is not allowed for table and parameter aggregation. Case: ${caseuuid}; ensemble: ${ensemblename}; entity: ${entityuuid}; columns: ${columns}; ${sc2_len} != ${tot_hits}`;
       }
     }
     return {
