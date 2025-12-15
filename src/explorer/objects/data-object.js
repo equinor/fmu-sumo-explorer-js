@@ -9,13 +9,13 @@ class DataObject {
   timestamp() {
     const t0 = this.metadata.data?.time?.t0?.value;
     const t1 = this.metadata.data?.time?.t1?.value;
-    return t0 !== undefined && !t1 == undefined ? t0 : undefined;
+    return t0 !== undefined && t1 == undefined ? t0 : undefined;
   }
 
   interval() {
     const t0 = this.metadata.data?.time?.t0?.value;
     const t1 = this.metadata.data?.time?.t1?.value;
-    return t0 !== undefined && !t1 != undefined ? t0 : undefined;
+    return t0 !== undefined && t1 != undefined ? [t0, t1] : undefined;
   }
 
   asset() {
