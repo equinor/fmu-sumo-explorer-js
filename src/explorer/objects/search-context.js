@@ -275,6 +275,9 @@ class SearchContext {
     this.must_not = must_not.slice();
     this.#hidden = hidden;
     this.#visible = visible;
+    this.#select = {
+      excludes: ["fmu.realization.parameters"],
+    };
     this.#hits = null;
     this.#cache = new LRUCache({ max: 200 });
     this.#length = null;
