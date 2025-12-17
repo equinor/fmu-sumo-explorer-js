@@ -44,13 +44,8 @@ function _gen_filter_stage(attr) {
   return (value) => {
     if (value == "iteration" || value == "ensemble") {
       return inner(["iteration", "ensemble"]);
-    } else if (
-      Array.isArray(value) &&
-      ("iteration" in value || "ensemble" in value)
-    ) {
-      return inner(
-        Array.from(new Set(value).union(new Set(["iteration", "ensemble"]))),
-      );
+    } else if (Array.isArray(value) && ("iteration" in value || "ensemble" in value)) {
+      return inner(Array.from(new Set(value).union(new Set(["iteration", "ensemble"]))));
     } else {
       return inner(value);
     }
@@ -274,15 +269,15 @@ class SearchContext {
   #field_values;
   #field_values_and_counts;
 
-  constructor(
-    sumo,
-    { must = [], must_not = [], hidden = false, visible = true } = {},
-  ) {
+  constructor(sumo, { must = [], must_not = [], hidden = false, visible = true } = {}) {
     this.sumo = sumo;
     this.must = must.slice();
     this.must_not = must_not.slice();
     this.#hidden = hidden;
     this.#visible = visible;
+    this.#select = {
+      excludes: ["fmu.realization.parameters"],
+    };
     this.#hits = null;
     this.#cache = new LRUCache({ max: 200 });
     this.#length = null;
@@ -345,9 +340,7 @@ class SearchContext {
       return this.#hits.length;
     }
     if (this.#length === null) {
-      this.#length = (
-        await this.sumo.post("/count", { query: await this.query() })
-      ).data.count;
+      this.#length = (await this.sumo.post("/count", { query: await this.query() })).data.count;
     }
     return this.#length;
   }
@@ -377,9 +370,7 @@ class SearchContext {
           break;
         }
         after = hits.at(-1).sort;
-        all_hits = all_hits.concat(
-          select === false ? hits.map((h) => h._id) : hits,
-        );
+        all_hits = all_hits.concat(select === false ? hits.map((h) => h._id) : hits);
       }
       await pit.destroy();
       return all_hits;
@@ -403,11 +394,7 @@ class SearchContext {
   async _get_buckets(field) {
     const buckets_per_batch = 1000;
     // fast path: try without Pit
-    let query = _build_bucket_query_simple(
-      await this.query(),
-      field,
-      buckets_per_batch,
-    );
+    let query = _build_bucket_query_simple(await this.query(), field, buckets_per_batch);
     const res = (await this.sumo.post("/search", query)).data;
     const other_docs_count = res.aggregations[field].sum_other_doc_count;
     if (other_docs_count == 0) {
@@ -518,11 +505,9 @@ class SearchContext {
     const uuids = this.#hits
       .slice(index, Math.min(index + 100, this.#hits.length))
       .filter((u) => !this.#cache.has(u));
-    const hits = await this.__search_all(
-      { ids: { values: uuids } },
-      { select: this.#select },
-    );
-    hits.forEach((hit) => this.#cache.set(hit._id, hit));
+    const hits = await this.__search_all({ ids: { values: uuids } }, { select: this.#select });
+    const cache = this.#cache;
+    hits.forEach((hit) => cache.set(hit._id, hit));
     return;
   }
 
@@ -825,12 +810,7 @@ class SearchContext {
 
   __prepare_verify_aggregation_query() {
     let aggs = {};
-    for (const field of [
-      "class",
-      "fmu.case.uuid",
-      "fmu.ensemble.name",
-      "fmu.entity.uuid",
-    ]) {
+    for (const field of ["class", "fmu.case.uuid", "fmu.ensemble.name", "fmu.entity.uuid"]) {
       aggs[field] = { terms: { field: field + ".keyword", size: 1 } };
     }
     return {
@@ -850,9 +830,7 @@ class SearchContext {
     for (let [k, v] of Object.entries(sres.aggregations)) {
       if (
         v.sum_other_doc_count ||
-        (v.buckets &&
-          v.buckets.length > 0 &&
-          v.buckets[0].doc_count != tot_hits)
+        (v.buckets && v.buckets.length > 0 && v.buckets[0].doc_count != tot_hits)
       ) {
         conflicts.push(k);
       }
@@ -862,8 +840,7 @@ class SearchContext {
     }
     const entityuuid = sres.aggregations["fmu.entity.uuid"]["buckets"][0].key;
     const caseuuid = sres.aggregations["fmu.case.uuid"]["buckets"][0].key;
-    const ensemblename =
-      sres.aggregations["fmu.ensemble.name"]["buckets"][0].key;
+    const ensemblename = sres.aggregations["fmu.ensemble.name"]["buckets"][0].key;
     const classname = sres.aggregations["class"]["buckets"][0].key;
     return { caseuuid, ensemblename, entityuuid, classname, tot_hits };
   }
@@ -883,11 +860,7 @@ class SearchContext {
     });
     const sc2_len = await sc2.length();
     let need_object_uuids = sc2_len != tot_hits;
-    if (
-      classname != "surface" &&
-      Array.isArray(columns) &&
-      columns.length == 1
-    ) {
+    if (classname != "surface" && Array.isArray(columns) && columns.length == 1) {
       if (sc2_len != tot_hits) {
         throw `Filtering on realization is not allowed for table and parameter aggregation. Case: ${caseuuid}; ensemble: ${ensemblename}; entity: ${entityuuid}; columns: ${columns}; ${sc2_len} != ${tot_hits}`;
       }
@@ -993,18 +966,14 @@ class SearchContext {
    * List of unique stratigraphic column names.
    */
   async stratcolumnidentifiers() {
-    return await this.get_field_values(
-      "masterdata.smda.stratigraphic_column.identifier.keyword",
-    );
+    return await this.get_field_values("masterdata.smda.stratigraphic_column.identifier.keyword");
   }
 
   /**
    * List of unique field names.
    */
   async fieldidentifiers() {
-    return await this.get_field_values(
-      "masterdata.smda.field.identifier.keyword",
-    );
+    return await this.get_field_values("masterdata.smda.field.identifier.keyword");
   }
 
   /**

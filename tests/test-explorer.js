@@ -1,12 +1,6 @@
 import { it, describe } from "mocha";
 
-import {
-  GetConfig,
-  GetCredential,
-  SumoClient,
-  Explorer,
-  ExplorerObjects,
-} from "../src/index.js";
+import { GetConfig, GetCredential, SumoClient, Explorer, ExplorerObjects } from "../src/index.js";
 import { AxiosError } from "axios";
 
 import assert from "node:assert";
@@ -38,9 +32,7 @@ const test_case_seismic_uuid = "c616019d-d344-4094-b2ee-dd4d6d336217";
 describe("Config", function () {
   it("Should get a config object.", function () {
     config = GetConfig("dev");
-    assert(
-      ["url", "tenantId", "clientId", "scopes"].every((key) => key in config),
-    );
+    assert(["url", "tenantId", "clientId", "scopes"].every((key) => key in config));
   });
 });
 
@@ -151,9 +143,7 @@ describe("case_surfaces.filter", function () {
     assert((await case_surfaces.filter({ stage: "ensemble" }).length()) == 59);
     assert((await case_surfaces.filter({ aggregation: true }).length()) == 59);
 
-    assert(
-      (await case_surfaces.filter({ stage: "realization" }).length()) == 212,
-    );
+    assert((await case_surfaces.filter({ stage: "realization" }).length()) == 212);
     assert((await case_surfaces.filter({ realization: true }).length()) == 212);
 
     let surf_reals = case_surfaces.filter({
@@ -162,40 +152,27 @@ describe("case_surfaces.filter", function () {
     });
     assert((await surf_reals.length()) == 212);
 
-    const ensnames = await surf_reals.get_field_values(
-      "fmu.ensemble.name.keyword",
-    );
+    const ensnames = await surf_reals.get_field_values("fmu.ensemble.name.keyword");
     assert(ensnames.length == 1 && ensnames[0] == "iter-0");
 
     assert((await surf_reals.filter({ name: "__not_valid__" }).length()) == 0);
 
     surf_reals = surf_reals.filter({ name: "Valysar Fm." });
     assert((await surf_reals.length()) == 56);
-    const ens_names_valysar = await surf_reals.get_field_values(
-      "fmu.ensemble.name.keyword",
-    );
+    const ens_names_valysar = await surf_reals.get_field_values("fmu.ensemble.name.keyword");
     assert(ens_names_valysar.length == 1 && ens_names_valysar[0] == "iter-0");
-    const data_names_valysar =
-      await surf_reals.get_field_values("data.name.keyword");
-    assert(
-      data_names_valysar.length == 1 && data_names_valysar[0] == "Valysar Fm.",
-    );
+    const data_names_valysar = await surf_reals.get_field_values("data.name.keyword");
+    assert(data_names_valysar.length == 1 && data_names_valysar[0] == "Valysar Fm.");
 
-    assert(
-      (await surf_reals.filter({ content: "__not_valid__" }).length()) == 0,
-    );
+    assert((await surf_reals.filter({ content: "__not_valid__" }).length()) == 0);
     surf_reals = surf_reals.filter({ content: "depth" });
     assert((await surf_reals.length()) == 56);
 
-    assert(
-      (await surf_reals.filter({ tagname: "__not_valid__" }).length()) == 0,
-    );
+    assert((await surf_reals.filter({ tagname: "__not_valid__" }).length()) == 0);
     surf_reals = surf_reals.filter({ tagname: "FACIES_Fraction_Channel" });
     assert((await surf_reals.length()) == 4);
 
-    assert(
-      (await surf_reals.filter({ dataformat: "__not_valid__" }).length()) == 0,
-    );
+    assert((await surf_reals.filter({ dataformat: "__not_valid__" }).length()) == 0);
     surf_reals = surf_reals.filter({ dataformat: "irap_binary" });
     assert((await surf_reals.length()) == 4);
 
@@ -218,10 +195,7 @@ describe("test_case_surfaces_pagination", function () {
     for await (const surf of surfs) {
       s.add(surf.id);
     }
-    assert(
-      s.size == (await surfs.length()),
-      `${s.size} != ${await surfs.length()}`,
-    );
+    assert(s.size == (await surfs.length()), `${s.size} != ${await surfs.length()}`);
   });
 });
 
@@ -230,11 +204,9 @@ describe("test_grids_and_properties", function () {
     const cases_with_grids = (await exp.cpgrids().cases()).filter({
       status: "keep",
     });
-    const cases_with_gridprops = (await exp.cpgrid_properties().cases()).filter(
-      {
-        status: "keep",
-      },
-    );
+    const cases_with_gridprops = (await exp.cpgrid_properties().cases()).filter({
+      status: "keep",
+    });
     const cgs = new Set(await cases_with_grids.uuids());
     const cgps = new Set(await cases_with_gridprops.uuids());
     assert(cgs.difference(cgps).size == 0 && cgps.difference(cgs).size == 0);
@@ -291,18 +263,14 @@ describe("test_reference_realizations", function () {
       const ens = await (await refs.ensembles()).get(0);
       const ensrefs = await ens.reference_realizations();
       assert((await ensrefs.length()) > 0);
-      assert(
-        (await ensrefs.length()) == (await ensrefs.realizationids()).length,
-      );
+      assert((await ensrefs.length()) == (await ensrefs.realizationids()).length);
     }
   });
 });
 
 describe("test_reference_realization_fallback", function () {
   it("Verifies that the reference_realizations() fallback works.", async function () {
-    const all_case_uuids = new Set(
-      await exp.get_field_values("fmu.case.uuid.keyword"),
-    );
+    const all_case_uuids = new Set(await exp.get_field_values("fmu.case.uuid.keyword"));
     const ref_case_uuids = new Set(
       await exp
         .filter({
@@ -311,13 +279,9 @@ describe("test_reference_realization_fallback", function () {
         })
         .get_field_values("fmu.case.uuid.keyword"),
     );
-    const no_ref_case_uuids = Array.from(
-      all_case_uuids.difference(ref_case_uuids),
-    );
+    const no_ref_case_uuids = Array.from(all_case_uuids.difference(ref_case_uuids));
     if (no_ref_case_uuids.length > 0) {
-      const ens = await exp
-        .filter({ uuid: no_ref_case_uuids, realization: [0, 1] })
-        .ensembles();
+      const ens = await exp.filter({ uuid: no_ref_case_uuids, realization: [0, 1] }).ensembles();
       if ((await ens.length()) > 0) {
         const refs = await (await ens.get(0)).reference_realizations();
         assert((await refs.length()) == 1 || (await refs.length()) == 2);

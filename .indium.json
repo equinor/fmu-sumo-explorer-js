@@ -1,0 +1,11 @@
+{
+  "configurations": [
+    {
+      "name": "FMU/Sumo Explorer",
+      "type": "node",
+      "program": "node",
+      "inspect-brk": true,
+      "root": "src"
+    }
+  ]
+}
