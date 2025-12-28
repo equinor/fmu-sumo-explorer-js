@@ -80,7 +80,15 @@ function _gen_filter_name() {
   };
 }
 
-function _gen_filter_time() {}
+function _gen_filter_time() {
+  return (value) => {
+    if (value === null) {
+      return [null, null];
+    } else {
+      return [value._get_query(), null];
+    }
+  };
+}
 
 function _gen_filter_bool(attr) {
   return (value) => {
@@ -263,7 +271,7 @@ class SearchContext {
   #hidden;
   #visible;
   #select;
-  #hits;
+  hits;
   #cache;
   #length;
   #field_values;
@@ -278,7 +286,7 @@ class SearchContext {
     this.#select = {
       excludes: ["fmu.realization.parameters"],
     };
-    this.#hits = null;
+    this.hits = null;
     this.#cache = new LRUCache({ max: 200 });
     this.#length = null;
     this.#field_values = {};
@@ -328,7 +336,6 @@ class SearchContext {
       cpgrid: CPGrid,
       cpgrid_property: CPGridProperty,
       ensemble: Ensemble,
-      iteration: Ensemble,
       realization: Realization,
     }[cls];
     assert(constructor !== undefined);
@@ -336,8 +343,8 @@ class SearchContext {
   }
 
   async length() {
-    if (this.#hits !== null) {
-      return this.#hits.length;
+    if (this.hits !== null) {
+      return this.hits.length;
     }
     if (this.#length === null) {
       this.#length = (await this.sumo.post("/count", { query: await this.query() })).data.count;
@@ -488,22 +495,22 @@ class SearchContext {
   }
 
   async uuids() {
-    if (this.#hits === null) {
-      this.#hits = await this.getuuids();
+    if (this.hits === null) {
+      this.hits = await this.getuuids();
     }
-    return this.#hits;
+    return this.hits;
   }
 
   async _maybe_prefetch(index) {
-    assert(this.#hits !== null);
-    assert(index <= this.#hits.length);
-    const uuid = this.#hits[index];
+    assert(this.hits !== null);
+    assert(index <= this.hits.length);
+    const uuid = this.hits[index];
     if (this.#cache.has(uuid)) {
       return;
     }
     // ELSE
-    const uuids = this.#hits
-      .slice(index, Math.min(index + 100, this.#hits.length))
+    const uuids = this.hits
+      .slice(index, Math.min(index + 100, this.hits.length))
       .filter((u) => !this.#cache.has(u));
     const hits = await this.__search_all({ ids: { values: uuids } }, { select: this.#select });
     const cache = this.#cache;
@@ -517,7 +524,7 @@ class SearchContext {
     return {
       next: async () => {
         await sc.uuids(); // ensure that we have a list of uuids
-        if (index < sc.#hits.length) {
+        if (index < sc.hits.length) {
           await sc._maybe_prefetch(index);
           const obj = await sc.get(index);
           index++;
@@ -541,57 +548,6 @@ class SearchContext {
     return await this.get_object(uuids[0]);
   }
 
-  _ensemble_or_realization_query(uuid) {
-    return {
-      query: {
-        bool: {
-          minimum_should_match: 1,
-          should: [
-            { term: { "fmu.ensemble.uuid.keyword": uuid } },
-            { term: { "fmu.iteration.uuid.keyword": uuid } },
-            { term: { "fmu.realization.uuid.keyword": uuid } },
-          ],
-        },
-      },
-      size: 1,
-      _source: {
-        includes: [
-          "$schema",
-          "class",
-          "source",
-          "version",
-          "access",
-          "masterdata",
-          "fmu.case",
-          "fmu.ensemble",
-          "fmu.realization",
-        ],
-      },
-    };
-  }
-
-  _patch_ensemble_or_realization(uuid, hits) {
-    if (hits.length === 1) {
-      const obj = hits[0];
-      obj._id = uuid;
-      const src = obj._source;
-      if (src.fmu.ensemble.uuid == uuid) {
-        src.class = "ensemble";
-        delete src.fmu.realization;
-      } else if (src.fmu.realization.uuid == "realization") {
-        src.class = "realization";
-      }
-    }
-  }
-
-  async _get_ensemble_or_realization(uuid) {
-    const query = this._ensemble_or_realization_query(uuid);
-    const res = await this.sumo.post("/search", query);
-    const hits = res.data.hits.hits;
-    this._patch_ensemble_or_realization(uuid, hits);
-    return hits;
-  }
-
   async get_object(uuid) {
     let obj = this.#cache.get(uuid);
     if (!obj) {
@@ -603,10 +559,7 @@ class SearchContext {
       let res = await this.sumo.post("/search", query);
       let hits = res.data.hits.hits;
       if (hits.length == 0) {
-        hits = await this._get_ensemble_or_realization(uuid);
-        if (hits.length == 0) {
-          throw `Document not found: ${uuid}.`;
-        }
+        throw `Document not found: ${uuid}.`;
       }
       obj = hits[0];
       this.#cache.set(uuid, obj);
@@ -705,29 +658,20 @@ class SearchContext {
 
   async cases() {
     const { Cases } = await import("./cases.js");
-    const { must, must_not } = this;
-    return new Cases(this.sumo, {
-      must,
-      must_not,
-    });
+    const uuids = await this.get_field_values("fmu.case.uuid.keyword");
+    return new Cases(this.sumo, uuids);
   }
 
   async ensembles() {
     const { Ensembles } = await import("./ensembles.js");
-    const { must, must_not } = this;
-    return new Ensembles(this.sumo, {
-      must,
-      must_not,
-    });
+    const uuids = await this.get_field_values("fmu.ensemble.uuid.keyword");
+    return new Ensembles(this.sumo, uuids);
   }
 
   async realizations() {
     const { Realizations } = await import("./realizations.js");
-    const { must, must_not } = this;
-    return new Realizations(this.sumo, {
-      must,
-      must_not,
-    });
+    const uuids = await this.get_field_values("fmu.realization.uuid.keyword");
+    return new Realizations(this.sumo, uuids);
   }
 
   surfaces() {
