@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "test": "mocha tests/test-explorer",
-    "demo": "node --experimental-fetch src/test2.js",
+    "demo": "node --experimental-fetch src/demo.js",
     "lint": "node node_modules/.bin/eslint src",
     "prepublishOnly": "node -e \"console.log('Packing for publish')\""
   },
