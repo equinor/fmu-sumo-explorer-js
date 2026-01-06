@@ -277,6 +277,14 @@ class SearchContext {
   #field_values;
   #field_values_and_counts;
 
+  /**
+   * constructor
+   * @param {SumoClient} sumo
+   * @param {Object[]} must - List of terms that must match.
+   * @param {Object[]} must_not - List of terms that must _not_ match
+   * @param {boolean} [hidden=false] - Specifies whether this context should match `hidden` objects.
+   * @param {boolean} [visible=true] - Specifies whether this context should match objects that are not `hidden`.
+   */
   constructor(sumo, { must = [], must_not = [], hidden = false, visible = true } = {}) {
     this.sumo = sumo;
     this.must = must.slice();
@@ -293,6 +301,10 @@ class SearchContext {
     this.#field_values_and_counts = {};
   }
 
+  /**
+   * Generate Elasticsearch query for context.
+   * @returns {Object} - Nested map containing a valid Elasticsearch query.
+   */
   query() {
     let must = this.must.slice();
     let must_not = this.must_not.slice();
@@ -309,14 +321,17 @@ class SearchContext {
     };
   }
 
+  /**
+   * Convert single search hit to instance of specific class.
+   * @param {Object} obj - Nested map describing object.
+   * @returns {Object} - Instance of one of the classes that fmu-sumo-explorer provides.
+   */
   async to_sumo(obj) {
     const {
       Case,
       Ensemble,
       Realization,
       Cases,
-      Ensembles,
-      Realizations,
       CPGrid,
       CPGridProperty,
       Cube,
@@ -342,6 +357,10 @@ class SearchContext {
     return new constructor(this.sumo, obj);
   }
 
+  /**
+   * Get number of objects matched by context.
+   * @returns {number}
+   */
   async length() {
     if (this.hits !== null) {
       return this.hits.length;
@@ -393,10 +412,8 @@ class SearchContext {
 
   /**
    * Get a list of buckets
-   *
    * @param {str} field - a field in the metadata
-   *
-   * returns - a list of unique values and counts {key, doc_count}
+   * @returns {Object[]} - a list of unique values and counts {key, doc_count}
    */
   async _get_buckets(field) {
     const buckets_per_batch = 1000;
@@ -433,6 +450,11 @@ class SearchContext {
     return all_buckets;
   }
 
+  /**
+   * Get unique values for property.
+   * @param {string} field - Property.
+   * @returns {string[]}
+   */
   async get_field_values(field) {
     if (!(field in this.#field_values)) {
       const buckets = await this._get_buckets(field);
@@ -441,6 +463,11 @@ class SearchContext {
     return this.#field_values[field];
   }
 
+  /**
+   * Get unique values for property, along with their counts.
+   * @param {string} field - Property.
+   * @returns {Object[]} - a list of unique values and counts {key, doc_count}
+   */
   async get_field_values_and_counts(field) {
     if (!(field in this.#field_values_and_counts)) {
       this.#field_values_and_counts[field] = await this._get_buckets(field);
@@ -448,6 +475,12 @@ class SearchContext {
     return this.#field_values_and_counts[field];
   }
 
+  /**
+   * Get property values that match a list of patterns.
+   * @param {string} field - Property.
+   * @param {string[]} patterns - List of regular expressions to match against.
+   * @returns {string[]} - List of matched values.
+   */
   async match_field_values(field, patterns) {
     const qdoc = {
       query: await this.query(),
@@ -466,6 +499,11 @@ class SearchContext {
     return res.aggregations.values.buckets.map(({ key }) => key);
   }
 
+  /**
+   * Get composite aggregation.
+   * @param {Object.<string, string>} fields - Mapping from aggregation name to the property the values are fetched from.
+   * @returns {Object[]} - List of combinations of values.
+   */
   async get_composite_agg(fields) {
     const buckets_per_batch = 1000;
     let query = _build_composite_query(this.query(), fields, buckets_per_batch);
@@ -490,10 +528,18 @@ class SearchContext {
     return all_buckets;
   }
 
+  /**
+   * Get uuids of hits matched by context.
+   * @returns {string[]}
+   */
   async getuuids() {
     return await this._search_all();
   }
 
+  /**
+   * Get uuids of hits matched by context, but use cached value if there is one.
+   * @returns {string[]}
+   */
   async uuids() {
     if (this.hits === null) {
       this.hits = await this.getuuids();
@@ -501,6 +547,10 @@ class SearchContext {
     return this.hits;
   }
 
+  /**
+   * Prefetch documents if document indicated by index is not cached.
+   * @param {number} index - index of document to fetch.
+   */
   async _maybe_prefetch(index) {
     assert(this.hits !== null);
     assert(index <= this.hits.length);
@@ -536,18 +586,33 @@ class SearchContext {
     };
   }
 
+  /**
+   * Get document at specific index.
+   * @param {number} index - index of document to fetch.
+   * @returns {}
+   */
   async get(index) {
     const uuids = await this.uuids();
     assert(index < uuids.length);
     return await this.get_object(uuids[index]);
   }
 
+  /**
+   * Throw exception unless exactly 1 document is matched by context; otherwise, return that document.
+   * @returns {Object}
+   */
   async single() {
     const uuids = await this.uuids();
     assert(uuids.length == 1);
     return await this.get_object(uuids[0]);
   }
 
+  /**
+   * Get document with specific uuid.
+   * @param {string} uuid
+   * @returns {Object}
+   * @throws {string}
+   */
   async get_object(uuid) {
     let obj = this.#cache.get(uuid);
     if (!obj) {
@@ -570,7 +635,8 @@ class SearchContext {
   /**
    * Specify what should be returned from elasticsearch.
    * Has the side effect of clearing the lru cache.
-   * @param sel - sel is either a single string value, a list of string value,
+   * @param {(string|string[]|Object[])} sel - sel is either a single string
+   * value, a list of string value,
    * or a dictionary with keys "includes" and/or "excludes" and the values are
    * lists of strings. The string values are nested property names.
    *
@@ -606,6 +672,11 @@ class SearchContext {
     return this;
   }
 
+  /**
+   * Narrow search context by adding search terms.
+   * @param {Object.<string, (string|string[]|number|number[]|boolean)>} args - filter specifications.
+   * @returns {SearchContext} - new SearchContext.
+   */
   filter(args) {
     const must = this.must.slice();
     const must_not = this.must_not.slice();
@@ -629,6 +700,10 @@ class SearchContext {
     });
   }
 
+  /**
+   * Select only hidden objects.
+   * @returns {SearchContext} - new SearchContext that only matches hidden objects.
+   */
   hidden() {
     return new SearchContext(this.sumo, {
       must: this.must,
@@ -638,6 +713,10 @@ class SearchContext {
     });
   }
 
+  /**
+   * Select only visible objects.
+   * @returns {SearchContext} - new SearchContext that only matches non-hidden objects.
+   */
   visible() {
     return new SearchContext(this.sumo, {
       must: this.must,
@@ -647,6 +726,10 @@ class SearchContext {
     });
   }
 
+  /**
+   * Select all objects.
+   * @returns {SearchContext} - new SearchContext that matches both hidden and non-hidden objects.
+   */
   all() {
     return new SearchContext(this.sumo, {
       must: this.must,
@@ -656,52 +739,96 @@ class SearchContext {
     });
   }
 
+  /**
+   * Select all case objects referenced in current context.
+   * @returns {Cases}
+   */
   async cases() {
     const { Cases } = await import("./cases.js");
     const uuids = await this.get_field_values("fmu.case.uuid.keyword");
     return new Cases(this.sumo, uuids);
   }
 
+  /**
+   * Select all ensemble objects referenced in current context.
+   * @returns {Ensembles}
+   */
   async ensembles() {
     const { Ensembles } = await import("./ensembles.js");
     const uuids = await this.get_field_values("fmu.ensemble.uuid.keyword");
     return new Ensembles(this.sumo, uuids);
   }
 
+  /**
+   * Select all realizations referenced in current context.
+   * @returns {Realizations}
+   */
   async realizations() {
     const { Realizations } = await import("./realizations.js");
     const uuids = await this.get_field_values("fmu.realization.uuid.keyword");
     return new Realizations(this.sumo, uuids);
   }
 
+  /**
+   * Select surfaces in current context.
+   * @returns {SearchContext} - new SearchContext.
+   */
   surfaces() {
     return this.filter({ cls: "surface" });
   }
 
+  /**
+   * Select tables in current context.
+   * @returns {SearchContext} - new SearchContext.
+   */
   tables() {
     return this.filter({ cls: "table" });
   }
 
+  /**
+   * Select dictionaries in current context.
+   * @returns {SearchContext} - new SearchContext.
+   */
   dictionaries() {
     return this.filter({ cls: "dictionary" });
   }
 
+  /**
+   * Select polygons in current context.
+   * @returns {SearchContext} - new SearchContext.
+   */
   polygons() {
     return this.filter({ cls: "polygons" });
   }
 
+  /**
+   * Select cubes in current context.
+   * @returns {SearchContext} - new SearchContext.
+   */
   cubes() {
     return this.filter({ cls: "cube" });
   }
 
+  /**
+   * Select grids in current context.
+   * @returns {SearchContext} - new SearchContext.
+   */
   cpgrids() {
     return this.filter({ cls: "cpgrid" });
   }
 
+  /**
+   * Select grid properties in current context.
+   * @returns {SearchContext} - new SearchContext.
+   */
   cpgrid_properties() {
     return this.filter({ cls: "cpgrid_property" });
   }
 
+  /**
+   * Select parameters in current context.
+   * @returns {SearchContext} - new SearchContext.
+   */
   parameters() {
     return this.filter({
       complex: {
@@ -742,12 +869,23 @@ class SearchContext {
     });
   }
 
+  /**
+   * Get an object by its uuid, and verify that it has the expecteed class.
+   * @param {string} cls - expected class of the object.
+   * @param {string} uuid
+   * @returns {Object}
+   */
   async get_object_by_class_and_uuid(cls, uuid) {
     const obj = await this.get_object(uuid);
     assert(obj.metadata["class"] == cls);
     return obj;
   }
 
+  /**
+   * Get case object by its uuid.
+   * @param {} uuid
+   * @returns {Case}
+   */
   async get_case_by_uuid(uuid) {
     return await this.get_object_by_class_and_uuid("case", uuid);
   }
@@ -862,6 +1000,15 @@ class SearchContext {
     return this.to_sumo(pollres.data);
   }
 
+  /**
+   * Create a new aggregated object.
+   * @param {string} operation - the kind of aggregation to perform.
+   * @param {?string[]} columns - the columns to aggregate (for table
+   * aggregation). Note: for this operation, only a single column is
+   * allowed.
+   * @param {boolean} [no_wait=false] - If true, do not poll for result, but return a response object that can be used for polling later.
+   * @returns {(Surface|Table|Object)}
+   */
   async aggregate({ operation, columns, no_wait = false }) {
     assert(
       !columns || columns.length == 1,
@@ -874,6 +1021,14 @@ class SearchContext {
     return sc._aggregate({ columns, operation, no_wait });
   }
 
+  /**
+   * Aggregate multiple columns.
+   * @param {string} operation - the kind of aggregatiion to perform. Note:
+   * only "collection" is allowed.
+   * @param {string[]} columns - the columns to aggregate.
+   * @param {boolean} [no_wait=false] - If true, do not poll for result, but return a response object that can be used for polling later.
+   * @returns {Object}
+   */
   async batch_aggregate({ operation, columns, no_wait = false }) {
     assert(operation == "collection");
     assert(Array.isArray(columns) && columns.length > 0);
@@ -892,6 +1047,10 @@ class SearchContext {
     return this.sumo.poll(res);
   }
 
+  /**
+   * Select reference realizations in context.
+   * @returns {SearchContext} - new SearchContext.
+   */
   reference_realizations() {
     return this.filter({
       cls: "realization",
@@ -900,119 +1059,136 @@ class SearchContext {
   }
 
   /**
-   * List of unique realization ids.
+   * Get list of unique realization ids in context.
+   * @returns {number[]} - list of realization ids.
    */
   async realizationids() {
     return await this.get_field_values("fmu.realization.id");
   }
 
   /**
-   * List of unique stratigraphic column names.
+   * Get list of unique stratigraphic column names in context.
+   * @returns {string[]} - list of stratigraphic column identifiers.
    */
   async stratcolumnidentifiers() {
     return await this.get_field_values("masterdata.smda.stratigraphic_column.identifier.keyword");
   }
 
   /**
-   * List of unique field names.
+   * Get list of unique field names in context.
+   * @returns {string[]} - list of field names.
    */
   async fieldidentifiers() {
     return await this.get_field_values("masterdata.smda.field.identifier.keyword");
   }
 
   /**
-   * List of unique asset names.
+   * Get list of unique asset names in context.
+   * @returns {string[]} - list of asset names.
    */
   async assets() {
     return await this.get_field_values("access.asset.name.keyword");
   }
 
   /**
-   * List of unique user names.
+   * Get list of unique user names in context.
+   * @returns {string[]} - list of user names.
    */
   async users() {
     return await this.get_field_values("fmu.case.user.id.keyword");
   }
 
   /**
-   * List of unique case statuses.
+   * Get list of unique case statuses in context.
+   * @returns {string[]} - list of statuses.
    */
   async statuses() {
     return await this.get_field_values("_sumo.status.keyword");
   }
 
   /**
-   * List of unique column names.
+   * Get list of unique column names in context.
+   * @returns {string[]} - list of column names.
    */
   async columns() {
     return await this.get_field_values("data.spec.columns.keyword");
   }
 
   /**
-   * List of unique contents.
+   * Get list of unique contents in context.
+   * @returns {string[]} - list of content types.
    */
   async contents() {
     return await this.get_field_values("data.content.keyword");
   }
 
   /**
-   * List of unique object vertical domains.
+   * Get list of unique object vertical domains in context.
+   * @returns {string[]} - list of vertical domain names.
    */
   async vertical_domains() {
     return await this.get_field_values("data.vertical_domain.keyword");
   }
 
   /**
-   * List of unique stages.
+   * Get list of unique stages in context.
+   * @returns {string[]} - list of stages.
    */
   async stages() {
     return await this.get_field_values("fmu.context.stage.keyword");
   }
 
   /**
-   * List of unique object aggregation operations.
+   * Get list of unique object aggregation operations in context.
+   * @returns {string[]} - list of aggregation operations.
    */
   async aggregations() {
     return await this.get_field_values("fmu.aggregation.operation.keyword");
   }
 
   /**
-   * List of unique data.format values.
+   * Get list of unique data.format values.
+   * @returns {string[]} - list of formats.
    */
   async dataformats() {
     return await this.get_field_values("data.format.keyword");
   }
 
   /**
-   * List of unique object tagnames.
+   * Get list of unique object tagnames in context.
+   * @returns {string[]} - list of tagnames.
    */
   async tagnames() {
     return await this.get_field_values("data.tagname.keyword");
   }
 
   /**
-   * List of unique object names.
+   * Get list of unique object names in context.
+   * @returns {string[]} - list of names.
    */
   async names() {
     return await this.get_field_values("data.name.keyword");
   }
 
   /**
-   * List of class names.
+   * Get list of class names in context.
+   * @returns {string[]} - list of class names.
    */
   async classes() {
     return await this.get_field_values("class.keyword");
   }
 
   /**
-   * List of standard result names.
+   * Get list of standard result names in context.
+   * @returns {string[]} - list of standard result names.
    */
   async standard_results() {
     return await this.get_field_values("data.standard_result.name.keyword");
   }
 
   /**
-   * List of entity uuids.
+   * Get list of entity uuids in context.
+   * @returns {string[]} - list of ntity uuids.
    */
   async entities() {
     return this.get_field_values("fmu.entity.uuid.keyword");
