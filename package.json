@@ -21,6 +21,7 @@
     "test": "mocha tests/test-explorer",
     "demo": "node --experimental-fetch src/demo.js",
     "lint": "node node_modules/.bin/eslint src",
+    "docs": "jsdoc2md > docs/api.md",
     "prepublishOnly": "node -e \"console.log('Packing for publish')\""
   },
   "dependencies": {
@@ -35,6 +36,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.39.1",
-    "eslint": "^9.39.1"
+    "eslint": "^9.39.1",
+    "jsdoc": "^4.0.5",
+    "jsdoc-to-markdown": "^9.1.3"
   }
 }
