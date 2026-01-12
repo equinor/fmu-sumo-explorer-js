@@ -75,9 +75,7 @@ async function test3(exp) {
 }
 
 async function test4(exp) {
-  const cse = await exp.get_case_by_uuid(
-    "359e7c72-a4ca-43ee-9203-f09cd0f149a9",
-  );
+  const cse = await exp.get_case_by_uuid("359e7c72-a4ca-43ee-9203-f09cd0f149a9");
   const ens = cse.filter({ ensemble: "pred-0" });
   const rels = ens.tables().filter({ tagname: "summary", realization: true });
   const agg = await rels.aggregate({
@@ -98,11 +96,7 @@ async function test5(exp) {
   console.log(caseuuids);
   console.log(JS(exp.filter({ uuid: caseuuids }).query()));
   console.log(await exp.filter({ uuid: caseuuids }).length());
-  console.log(
-    await exp
-      .filter({ uuid: caseuuids })
-      .get_field_values("fmu.ensemble.uuid.keyword"),
-  );
+  console.log(await exp.filter({ uuid: caseuuids }).get_field_values("fmu.ensemble.uuid.keyword"));
   const ensembles = await exp.filter({ uuid: caseuuids }).ensembles();
   console.log(JS(ensembles.query()));
   console.log(await ensembles.length());
@@ -166,15 +160,28 @@ async function test8(exp) {
   assert(token1.token == token2.token);
 }
 
-
 async function test9(exp) {
   const cases = (await exp.cases()).filter({ field: "DROGON" });
   for await (const c of cases) {
     assert(c instanceof ExplorerObjects.Case);
     assert(c.field().toLowerCase() == "drogon");
     console.log(c.name());
-    
-  }  
+  }
+}
+
+async function test10(exp) {
+  const first = await exp
+    .sort({ "_sumo.timestamp": { order: "asc" } })
+    .limit(1)
+    .single();
+  const last = await exp
+    .sort({ "_sumo.timestamp": { order: "desc" } })
+    .limit(1)
+    .single();
+  console.log(`First: ${first.id}`);
+  console.log(`Last:  ${last.id}`);
+  console.log(`First: ${first.metadata._sumo.timestamp}`);
+  console.log(`Last:  ${last.metadata._sumo.timestamp}`);
 }
 
 async function main() {
@@ -196,8 +203,9 @@ async function main() {
 
   // await test8(exp);
 
+  // await test9(exp);
 
-  await test9(exp);
+  await test10(exp);
 }
 
 try {
