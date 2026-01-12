@@ -1,5 +1,7 @@
 class DataObject {
   sumo;
+  metadata;
+  id;
   constructor(sumo, { _id, _source }) {
     this.sumo = sumo;
     this.id = _id;

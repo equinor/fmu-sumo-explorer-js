@@ -271,6 +271,8 @@ class SearchContext {
   #hidden;
   #visible;
   #select;
+  #sort;
+  #limit;
   hits;
   #cache;
   #length;
@@ -294,6 +296,8 @@ class SearchContext {
     this.#select = {
       excludes: ["fmu.realization.parameters"],
     };
+    this.#sort = { _doc: { order: "asc" } };
+    this.#limit = null;
     this.hits = null;
     this.#cache = new LRUCache({ max: 200 });
     this.#length = null;
@@ -369,6 +373,9 @@ class SearchContext {
     }
     if (this.#length === null) {
       this.#length = (await this.sumo.post("/count", { query: await this.query() })).data.count;
+      if (this.#limit !== null) {
+        this.#length = Math.min(this.#length, this.#limit);
+      }
     }
     return this.#length;
   }
@@ -378,10 +385,14 @@ class SearchContext {
       query,
       size,
       _source: select,
-      sort: { _doc: { order: "asc" } },
+      sort: this.#sort,
     };
-    const tot_count = (await this.sumo.post("/count", { query })).data.count;
+    let tot_count = (await this.sumo.post("/count", { query })).data.count;
+    if (this.#limit !== null) {
+      tot_count = Math.min(tot_count, this.#limit);
+    }
     if (tot_count <= size) {
+      qdoc.size = tot_count;
       const res = await this.sumo.post("/search", qdoc);
       const hits = res.data.hits.hits;
       return select === false ? hits.map((h) => h._id) : hits;
@@ -389,8 +400,11 @@ class SearchContext {
       let all_hits = [];
       let after = null;
       const pit = await Pit.create(this.sumo, "1m");
-      while (true) {
+      while (all_hits.length < tot_count) {
         qdoc = pit.stamp_query(_set_search_after(qdoc, after));
+        if (this.#limit !== null) {
+          qdoc.size = Math.min(size, tot_count - this.#limit);
+        }
         const res = await this.sumo.post("/search", qdoc);
         pit.update_from_result(res.data);
         const hits = res.data.hits.hits;
@@ -685,6 +699,42 @@ class SearchContext {
       this.#select = slct;
       this.#cache.clear();
     }
+    return this;
+  }
+
+  /**
+   * Set sort order.
+   * @param {Object|Object[]} sortspec - A single sort specification, or a
+   * list of sort specifications, each of which is a an object with a field
+   * as key and a dictionary with key "order" and "asc" or "desc" as value.
+   * The default is {"_doc": {"order": "asc"}}
+   *
+   * This method returns itself, so it is chainable, but the sort
+   * settings will not propagate into a new SearchContext
+   * (specifically, it will not be passed into the result of .filter()).
+   *
+   * @returns {SearchContext} itself.
+   */
+  sort(sortspec) {
+    this.#sort = sortspec;
+    this.hits = null;
+    return this;
+  }
+
+  /**
+   * Set max number of items to search. If set to null, there is no limit.
+   * @param {number} [n=null]
+   *
+   * This method returns itself, so it is chainable, but the sort
+   * settings will not propagate into a new SearchContext
+   * (specifically, it will not be passed into the result of .filter()).
+   *
+   * @returns {}
+   */
+  limit(n = null) {
+    this.#limit = n;
+    this.#length = null;
+    this.hits = null;
     return this;
   }
 
