@@ -184,6 +184,22 @@ async function test10(exp) {
   console.log(`Last:  ${last.metadata._sumo.timestamp}`);
 }
 
+async function test11(exp) {
+  const req = [{ delete: { _index: "sumo", _id: "bar" } }];
+  const reqstr = req.map((r) => JSON.stringify(r)).join("\n") + "\n";
+  const { data } = await exp.sumo.put(
+    "/admin/bulk",
+    reqstr,
+    {},
+    {
+      headers: {
+        "Content-Type": "application/x-ndjson",
+      },
+    },
+  );
+  console.log(JS(data));
+}
+
 async function main() {
   const exp = await GetExplorer("dev");
 
@@ -205,7 +221,9 @@ async function main() {
 
   // await test9(exp);
 
-  await test10(exp);
+  // await test10(exp);
+
+  await test11(exp);
 }
 
 try {

@@ -21,49 +21,46 @@ class SumoClient {
     axiosRetry(this.#axios, {
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: (error) =>
-        axiosRetry.isNetworkOrIdempotentRequestError(error) ||
-        error.response?.status === 429,
+        axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response?.status === 429,
     });
   }
 
-  async #headers() {
-    if (
-      this.#cachedtoken == null ||
-      this.#cachedtoken.expiresOnTimestamp < Date.now() - 1000
-    ) {
+  async #headers(headers_in) {
+    if (this.#cachedtoken == null || this.#cachedtoken.expiresOnTimestamp < Date.now() - 1000) {
       this.#cachedtoken = await this.#credential.getToken(this.#scope);
     }
 
     const token = this.#cachedtoken.token;
     return {
+      ...headers_in,
       Authorization: `Bearer ${token}`,
     };
   }
 
-  async get(url, params = {}) {
+  async get(url, params = {}, config = {}) {
     return this.#axios.get(url, {
-      headers: await this.#headers(),
+      headers: await this.#headers(config.headers),
       params,
     });
   }
 
-  async post(url, data, params) {
+  async post(url, data, params = {}, config = {}) {
     return this.#axios.post(url, data, {
-      headers: await this.#headers(),
+      headers: await this.#headers(config.headers),
       params,
     });
   }
 
-  async put(url, data, params) {
+  async put(url, data, params = {}, config = {}) {
     return this.#axios.put(url, data, {
-      headers: await this.#headers(),
+      headers: await this.#headers(config.headers),
       params,
     });
   }
 
-  async delete(url, params) {
+  async delete(url, params, config = {}) {
     return this.#axios.delete(url, {
-      headers: await this.#headers(),
+      headers: await this.#headers(config.headers),
       params,
     });
   }
