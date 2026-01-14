@@ -5,6 +5,7 @@ import {
   Explorer,
   ExplorerObjects,
   GetExplorer,
+  GetSearchContextBase,
 } from "./index.js";
 import { AxiosError } from "axios";
 
@@ -200,6 +201,31 @@ async function test11(exp) {
   console.log(JS(data));
 }
 
+async function test12() {
+  for (const index of [
+    "sumo",
+    "sumoaccesslog",
+    "sumomessagelog",
+    "sumotime",
+    "sumodeleted",
+    "sumotasks",
+  ]) {
+    const sc = await GetSearchContextBase("dev", index);
+    const numobjs = await sc.length();
+    console.log(`${index}: ${numobjs} objects.`);
+  }
+}
+
+async function test13() {
+  for (const index of ["sumoaccesslog", "sumomessagelog"]) {
+    let sc = await GetSearchContextBase("dev", index);
+    sc = sc.filter({ complex: { range: { timestamp: { gt: "now-1M" } } } });
+    // console.log(JS(sc.query()));
+    const numobjs = await sc.length();
+    console.log(`${index}: ${numobjs} objects.`);
+  }
+}
+
 async function main() {
   const exp = await GetExplorer("dev");
 
@@ -223,7 +249,10 @@ async function main() {
 
   // await test10(exp);
 
-  await test11(exp);
+  // await test11(exp);
+
+  await test12();
+  await test13();
 }
 
 try {
