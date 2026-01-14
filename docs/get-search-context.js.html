@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Home</title>
+    <title>JSDoc: Source: get-search-context.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,32 +17,38 @@
 
 <div id="main">
 
-    <h1 class="page-title">Home</h1>
+    <h1 class="page-title">Source: get-search-context.js</h1>
 
     
 
 
 
     
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import GetConfig from "./config.js";
+import GetCredential from "./auth.js";
+import SumoClient from "./sumo-client.js";
+import SearchContextBase from "./explorer/objects/search-context-base.js";
 
+/**
+ * Get SearchContextBase instance.
+ * @param {string} env - Which sumo environment to connect to.
+ * @param {string} index - Which index to use.
+ * @returns {SearchContextBase}
+ */
+async function GetSearchContextBase(env, index) {
+  const config = GetConfig(env);
+  const credential = await GetCredential(config);
+  const sumo = new SumoClient(config.url, credential, config.scopes);
+  const exp = new SearchContextBase(sumo, { index });
+  return exp;
+}
 
-    <h3> </h3>
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
+export default GetSearchContextBase;
+</code></pre>
+        </article>
+    </section>
 
 
 
