@@ -1,4 +1,4 @@
-import GetConfig from "./config.js";
+import { GetConfig, EnvNames } from "./config.js";
 import GetCredential from "./auth.js";
 import SumoClient from "./sumo-client.js";
 import Explorer from "./explorer/explorer.js";
@@ -9,6 +9,7 @@ import GetSearchContextBase from "./get-search-context.js";
 
 export {
   GetConfig,
+  EnvNames,
   GetCredential,
   SumoClient,
   Explorer,
@@ -19,6 +20,7 @@ export {
 
 export default {
   GetConfig,
+  EnvNames,
   GetCredential,
   SumoClient,
   Explorer,

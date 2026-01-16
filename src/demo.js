@@ -1,8 +1,6 @@
 import {
   GetConfig,
   GetCredential,
-  SumoClient,
-  Explorer,
   ExplorerObjects,
   GetExplorer,
   GetSearchContextBase,

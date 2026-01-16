@@ -1,4 +1,4 @@
-import GetConfig from "./config.js";
+import { GetConfig } from "./config.js";
 import GetCredential from "./auth.js";
 import SumoClient from "./sumo-client.js";
 import SearchContextBase from "./explorer/objects/search-context-base.js";
