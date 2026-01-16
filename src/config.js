@@ -55,11 +55,17 @@ const config = {
   },
 };
 
+function EnvNames() {
+  return Object.keys(config);
+}
+
 function GetConfig(env) {
-  if ((!env) in config) {
+  if (!(env in config)) {
     throw `Unknown environment: ${env}`;
   }
   return config[env];
 }
 
-export default GetConfig;
+export { EnvNames, GetConfig };
+
+export default { EnvNames, GetConfig };
