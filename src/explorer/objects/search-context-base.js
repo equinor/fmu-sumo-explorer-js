@@ -129,7 +129,7 @@ class SearchContextBase {
     this.must = must.slice();
     this.must_not = must_not.slice();
     this.index = index;
-    this.#select = null;
+    this.#select = {};
     this.#sort = { _doc: { order: "asc" } };
     this.#limit = null;
     this.hits = null;
