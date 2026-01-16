@@ -197,7 +197,7 @@ class SearchContextBase {
       while (all_hits.length < tot_count) {
         qdoc = pit.stamp_query(_set_search_after(qdoc, after));
         if (this.#limit !== null) {
-          qdoc.size = Math.min(size, tot_count - this.#limit);
+          qdoc.size = Math.min(size, this.#limit - all_hits.length);
         }
         const res = await this.sumo.post("/search", qdoc, { index: this.index });
         pit.update_from_result(res.data);
