@@ -65,21 +65,24 @@ function _set_search_after(query, after) {
 
 class Pit {
   sumo;
+  #index;
   #keepalive;
   #id;
 
-  constructor(sumo, keepalive, id) {
+  constructor(sumo, index, keepalive, id) {
     this.sumo = sumo;
+    this.#index = index;
     this.#keepalive = keepalive;
     this.#id = id;
   }
 
-  static async create(sumo, keepalive = "5m") {
+  static async create(sumo, index, keepalive = "5m") {
     const resp = await sumo.post("/pit", null, {
       "keep-alive": keepalive,
+      index,
     });
     const { id } = resp.data;
-    return new Pit(sumo, keepalive, id);
+    return new Pit(sumo, index, keepalive, id);
   }
 
   async destroy() {
@@ -193,12 +196,9 @@ class SearchContextBase {
     } else {
       let all_hits = [];
       let after = null;
-      const pit = await Pit.create(this.sumo, "1m");
+      const pit = await Pit.create(this.sumo, this.index, "1m");
       while (all_hits.length < tot_count) {
         qdoc = pit.stamp_query(_set_search_after(qdoc, after));
-        if (this.#limit !== null) {
-          qdoc.size = Math.min(size, this.#limit - all_hits.length);
-        }
         const res = await this.sumo.post("/search", qdoc, { index: this.index });
         pit.update_from_result(res.data);
         const hits = res.data.hits.hits;
@@ -241,7 +241,7 @@ class SearchContextBase {
     query = _build_bucket_query(this.query(), field, buckets_per_batch);
     let all_buckets = [];
     let after_key = null;
-    const pit = await Pit.create(this.sumo, "1m");
+    const pit = await Pit.create(this.sumo, this.index, "1m");
     while (true) {
       query = pit.stamp_query(_set_after_key(query, field, after_key));
       const res = (await this.sumo.post("/search", query, { index: this.index })).data;
@@ -325,7 +325,7 @@ class SearchContextBase {
     let query = _build_composite_query(this.query(), fields, buckets_per_batch);
     let all_buckets = [];
     let after_key = null;
-    const pit = await Pit.create(this.sumo, "1m");
+    const pit = await Pit.create(this.sumo, this.index, "1m");
     while (true) {
       query = pit.stamp_query(_set_after_key(query, "composite", after_key));
       const res = (await this.sumo.post("/search", query, { index: this.index })).data;
