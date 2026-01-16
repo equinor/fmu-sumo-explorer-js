@@ -14,7 +14,7 @@ import {
 import { cachePersistencePlugin } from "@azure/identity-cache-persistence";
 useIdentityPlugin(cachePersistencePlugin);
 
-import GetConfig from "./config.js";
+import { GetConfig } from "./config.js";
 
 async function GetCredential({ tenantId, clientId, scopes } = {}) {
   if (process.env.AZURE_TENANT_ID && process.env.AZURE_CLIENT_ID) {
