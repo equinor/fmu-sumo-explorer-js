@@ -451,6 +451,10 @@ class SearchContextBase {
         throw `Document not found: ${uuid}.`;
       }
       obj = hits[0];
+      // hack: ensure that .id and .metadata works the same as for
+      // the values returned from get_object in class SearchContext.
+      obj.id = obj._id;
+      obj.metadata = obj._source;
       this.#cache.set(uuid, obj);
     }
     return obj;
