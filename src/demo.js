@@ -21,18 +21,24 @@ async function test1(exp) {
   const cases_with_grids = (await exp.cpgrids().cases()).filter({
     status: "keep",
   });
-  const cases_with_gridprops = (await exp.cpgrid_properties().cases()).filter({
+  const cases_with_gridprops = (
+    await exp
+      .cpgrid_properties()
+      .filter({ complex: { exists: { field: "data.geometry" } } })
+      .cases()
+  ).filter({
     status: "keep",
   });
   const cgs = new Set(await cases_with_grids.uuids());
   const cgps = new Set(await cases_with_gridprops.uuids());
-  assert(cgs.difference(cgps).size == 0 && cgps.difference(cgs).size == 0);
-  const cse = await cases_with_grids.get(0);
+  assert(cgps.difference(cgs).size == 0);
+  const cse = await cases_with_gridprops.get(0);
   const grids = cse.cpgrids();
   const grid = await grids.get(0);
   assert(grid instanceof ExplorerObjects.CPGrid);
   const gridprops = await grid.grid_properties();
   console.log(JS(gridprops.query()));
+  console.log(await gridprops.length());
   const gridp0 = await gridprops.get(0);
   assert(gridp0 instanceof ExplorerObjects.CPGridProperty);
   const grid2 = await gridp0.grid();
@@ -227,7 +233,7 @@ async function test13() {
 async function main() {
   const exp = await GetExplorer("dev");
 
-  // await test1(exp);
+  await test1(exp);
 
   // await test2(exp);
 
@@ -249,8 +255,9 @@ async function main() {
 
   // await test11(exp);
 
-  await test12();
-  await test13();
+  // await test12();
+
+  // await test13();
 }
 
 try {
