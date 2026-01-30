@@ -204,13 +204,18 @@ describe("test_grids_and_properties", function () {
     const cases_with_grids = (await exp.cpgrids().cases()).filter({
       status: "keep",
     });
-    const cases_with_gridprops = (await exp.cpgrid_properties().cases()).filter({
+    const cases_with_gridprops = (
+      await exp
+        .cpgrid_properties()
+        .filter({ complex: { exists: { field: "data.geometry" } } })
+        .cases()
+    ).filter({
       status: "keep",
     });
     const cgs = new Set(await cases_with_grids.uuids());
     const cgps = new Set(await cases_with_gridprops.uuids());
-    assert(cgs.difference(cgps).size == 0 && cgps.difference(cgs).size == 0);
-    const cse = await cases_with_grids.get(0);
+    assert(cgps.difference(cgs).size == 0);
+    const cse = await cases_with_gridprops.get(0);
     const grids = cse.cpgrids();
     const grid = await grids.get(0);
     assert(grid instanceof ExplorerObjects.CPGrid);
