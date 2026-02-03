@@ -30,7 +30,7 @@
     "@azure/msal-node": "^3.8.2",
     "axios": "^1.13.2",
     "axios-retry": "^4.5.0",
-    "lru-cache": "^11.2.2",
+    "lru-cache": "^11.2.2"
    },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
