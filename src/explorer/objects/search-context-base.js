@@ -65,13 +65,11 @@ function _set_search_after(query, after) {
 
 class Pit {
   sumo;
-  #index;
   #keepalive;
   #id;
 
   constructor(sumo, index, keepalive, id) {
     this.sumo = sumo;
-    this.#index = index;
     this.#keepalive = keepalive;
     this.#id = id;
   }
