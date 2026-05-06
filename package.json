@@ -1,5 +1,5 @@
 {
-  "name": "fmu-sumo-explorer",
+  "name": "@equinor/fmu-sumo-explorer",
   "version": "1.0.0",
   "description": "Package for working with FMU data stored in Sumo.",
   "license": "Apache-2.0",
