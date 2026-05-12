@@ -2,6 +2,8 @@ import { LRUCache } from "lru-cache";
 
 import assert from "node:assert";
 
+import Metrics from "./metrics.js";
+
 function _build_bucket_query(query, field, size) {
   return {
     size: 0,
@@ -548,6 +550,10 @@ class SearchContextBase {
       must_not,
       index: this.index,
     });
+  }
+
+  metrics() {
+    return new Metrics(this);
   }
 }
 
