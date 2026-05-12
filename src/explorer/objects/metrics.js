@@ -13,7 +13,7 @@ class Metrics {
     return data.aggregations.agg;
   }
 
-  /*
+  /**
    * Find the minimum value for the specified property across the
    * current set of objects.
    * @async
@@ -24,7 +24,7 @@ class Metrics {
     return (await this.#aggregate("min", { field }))["value"];
   }
 
-  /*
+  /**
    * Find the maximum value for the specified property across the
    * current set of objects.
    * @async
@@ -35,7 +35,7 @@ class Metrics {
     return (await this.#aggregate("max", { field }))["value"];
   }
 
-  /*
+  /**
    * Find the average value for the specified property across the
    * current set of objects.
    * @async
@@ -46,7 +46,7 @@ class Metrics {
     return (await this.#aggregate("avg", { field }))["value"];
   }
 
-  /*
+  /**
    * Find the sum value for the specified property across the
    * current set of objects.
    * @async
@@ -57,7 +57,7 @@ class Metrics {
     return (await this.#aggregate("sum", { field }))["value"];
   }
 
-  /*
+  /**
    * Find the count of value for the specified property across the
    * current set of objects.
    * @async
@@ -68,7 +68,7 @@ class Metrics {
     return (await this.#aggregate("value_count", { field }))["value"];
   }
 
-  /*
+  /**
    * Find the count of distinct values for the specified property across the
    * current set of objects.
    * @async
@@ -80,7 +80,7 @@ class Metrics {
     return (await this.#aggregate("cardinality", { field }))["value"];
   }
 
-  /*
+  /**
    * Compute a basic set of statistics of the values for the specified
    * property across the current set of objects.
    * @async
@@ -91,7 +91,7 @@ class Metrics {
     return await this.#aggregate("stats", { field });
   }
 
-  /*
+  /**
    * Compute an extended set of statistics of the values for the specified
    * property across the current set of objects.
    * @async
@@ -102,7 +102,7 @@ class Metrics {
     return await this.#aggregate("extended_stats", { field });
   }
 
-  /*
+  /**
    * Find the values at specific percentiles for the specified
    * property across the current set of objects.
    * @async
@@ -112,7 +112,9 @@ class Metrics {
    * @returns a dictionary of statistical metrics.
    */
   async percentiles(field, percents = undefined) {
-    return (await this.#aggregate("percentiles", { field }, (percents = percents)))["values"];
+    return (await this.#aggregate("percentiles", { field, ...(percents && { percents }) }))[
+      "values"
+    ];
   }
 
   #fnv1a_script(field) {
@@ -145,7 +147,7 @@ class Metrics {
     };
   }
 
-  /*
+  /**
    * Compute the 64-bit FNV-1a checksum for field over the current set of objects.
    * @async
    * @param {string} field: the name of a property in the metadata.

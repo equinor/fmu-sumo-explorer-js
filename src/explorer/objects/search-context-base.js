@@ -552,6 +552,11 @@ class SearchContextBase {
     });
   }
 
+  /**
+   * Return Metrics object for SearchContext.
+   *
+   * @returns {Metrics}
+   */
   metrics() {
     return new Metrics(this);
   }
