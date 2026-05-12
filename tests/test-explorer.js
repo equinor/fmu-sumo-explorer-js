@@ -340,6 +340,11 @@ describe("test_mestrics", function () {
       const res = await rels.metrics()[agg]("file.size_bytes");
       console.log(agg, JS(res));
     }
+
+    console.log(
+      "percentiles [10, 50, 90]",
+      await rels.metrics().percentiles("file.size_bytes", [10, 50, 90]),
+    );
     console.log("fnv1a", await rels.metrics().fnv1a("file.checksum_md5.keyword"));
   });
 });
