@@ -3,12 +3,21 @@ import axiosRetry from "axios-retry";
 
 import assert from "node:assert";
 
+/** Simple wrapper for making HTTP requests to a Sumo instance. */
 class SumoClient {
   #axios;
   #baseUrl;
   #credential;
   #scope;
   #cachedtoken;
+  /**
+   * Constructor
+   * @param {string} baseUrl The base url for the Sumo instance.
+   * @param {WorkloadIdentityCredential|InteractiveBrowserCredential|EnvironmentCredential} credential
+   * @param {string} scope
+   *
+   * @returns {SumoClient}
+   */
   constructor(baseUrl, credential, scope) {
     this.#credential = credential;
     this.#scope = scope;
@@ -25,6 +34,13 @@ class SumoClient {
     });
   }
 
+  /**
+   * Add authorization to headers.
+   * @async
+   * @private
+   * @param {Object} headers_in: key/value map of http headers
+   * @returns {Object}: key/value map of http headers
+   */
   async #headers(headers_in) {
     if (this.#cachedtoken == null || this.#cachedtoken.expiresOnTimestamp < Date.now() - 1000) {
       this.#cachedtoken = await this.#credential.getToken(this.#scope);
@@ -37,6 +53,12 @@ class SumoClient {
     };
   }
 
+  /**
+   * Perform HTTP GET.
+   * @param {string} url request url (relative to baseUrl)
+   * @param {Object} params key/value map of parameters
+   * @param {Object} config additional settings for request (e.g, headers)
+   */
   async get(url, params = {}, config = {}) {
     return this.#axios.get(url, {
       headers: await this.#headers(config.headers),
@@ -44,6 +66,13 @@ class SumoClient {
     });
   }
 
+  /**
+   * Perform HTTP POST.
+   * @param {string} url request url (relative to baseUrl)
+   * @param {} data upload body
+   * @param {Object} params key/value map of parameters
+   * @param {Object} config additional settings for request (e.g, headers)
+   */
   async post(url, data, params = {}, config = {}) {
     return this.#axios.post(url, data, {
       headers: await this.#headers(config.headers),
@@ -51,6 +80,13 @@ class SumoClient {
     });
   }
 
+  /**
+   * Perform HTTP PUT.
+   * @param {string} url request url (relative to baseUrl)
+   * @param {} data upload body
+   * @param {Object} params key/value map of parameters
+   * @param {Object} config additional settings for request (e.g, headers)
+   */
   async put(url, data, params = {}, config = {}) {
     return this.#axios.put(url, data, {
       headers: await this.#headers(config.headers),
@@ -58,6 +94,12 @@ class SumoClient {
     });
   }
 
+  /**
+   * Perform HTTP DELETE.
+   * @param {string} url request url (relative to baseUrl)
+   * @param {Object} params key/value map of parameters
+   * @param {Object} config additional settings for request (e.g, headers)
+   */
   async delete(url, params, config = {}) {
     return this.#axios.delete(url, {
       headers: await this.#headers(config.headers),

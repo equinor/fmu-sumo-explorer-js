@@ -1,5 +1,11 @@
+/** Helper class for getting metrics from a  SearchContext */
 class Metrics {
   #searchContext;
+
+  /**
+   * constructor
+   * @param {SearchContextBase} search_context
+   */
   constructor(search_context) {
     this.#searchContext = search_context;
   }
@@ -17,7 +23,7 @@ class Metrics {
    * Find the minimum value for the specified property across the
    * current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
+   * @param {string} field the name of a property in the metadata.
    * @returns the minimum value
    */
   async min(field) {
@@ -28,7 +34,7 @@ class Metrics {
    * Find the maximum value for the specified property across the
    * current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
+   * @param {string} field the name of a property in the metadata.
    * @returns the maximum value
    */
   async max(field) {
@@ -39,7 +45,7 @@ class Metrics {
    * Find the average value for the specified property across the
    * current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
+   * @param {string} field the name of a property in the metadata.
    * @returns the average value
    */
   async avg(field) {
@@ -50,7 +56,7 @@ class Metrics {
    * Find the sum value for the specified property across the
    * current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
+   * @param {string} field the name of a property in the metadata.
    * @returns the sum value
    */
   async sum(field) {
@@ -61,7 +67,7 @@ class Metrics {
    * Find the count of value for the specified property across the
    * current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
+   * @param {string} field the name of a property in the metadata.
    * @returns the total number of values
    */
   async value_count(field) {
@@ -72,7 +78,7 @@ class Metrics {
    * Find the count of distinct values for the specified property across the
    * current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
+   * @param {string} field the name of a property in the metadata.
    * @returns the number of distinct values
    * @note The value returned is approximate.
    */
@@ -84,7 +90,7 @@ class Metrics {
    * Compute a basic set of statistics of the values for the specified
    * property across the current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
+   * @param {string} field the name of a property in the metadata.
    * @returns a dictionary of statistical metrics.
    */
   async stats(field) {
@@ -95,7 +101,7 @@ class Metrics {
    * Compute an extended set of statistics of the values for the specified
    * property across the current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
+   * @param {string} field the name of a property in the metadata.
    * @returns a dictionary of statistical metrics.
    */
   async extended_stats(field) {
@@ -106,8 +112,8 @@ class Metrics {
    * Find the values at specific percentiles for the specified
    * property across the current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
-   * @param {number[]} percents: list of percent values. If omitted, uses
+   * @param {string} field the name of a property in the metadata.
+   * @param {number[]} percents list of percent values. If omitted, uses
    * a default set of values.
    * @returns a dictionary of statistical metrics.
    */
@@ -150,8 +156,8 @@ class Metrics {
   /**
    * Compute the 64-bit FNV-1a checksum for field over the current set of objects.
    * @async
-   * @param {string} field: the name of a property in the metadata.
-   * returns {Object}: a dict with the keys "docs_all", "docs_seen" and "xor_fnv64_hex".
+   * @param {string} field the name of a property in the metadata.
+   * returns {Object} a dict with the keys "docs_all", "docs_seen" and "xor_fnv64_hex".
    */
   async fnv1a(field) {
     return await this.#aggregate("scripted_metric", this.#fnv1a_script(field));
