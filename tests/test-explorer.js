@@ -297,7 +297,7 @@ describe("test_reference_realization_fallback", function () {
   });
 });
 
-describe("test_mestrics", function () {
+describe("test_metrics", function () {
   it("Verifies that the various metrics methods work.", async function () {
     const cases = await exp
       .surfaces()
