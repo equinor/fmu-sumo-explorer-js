@@ -266,7 +266,7 @@ class SearchContextBase {
   }
 
   /**
-     { * Get a list of buckets, using partitioned terms aggregation.
+   * Get a list of buckets, using partitioned terms aggregation.
    * @async
    * @param {str} field - a field in the metadata
    * @returns {Object[]} a list of unique values and counts {key, doc_count}
