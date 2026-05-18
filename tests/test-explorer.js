@@ -33,8 +33,8 @@ const test_case_summary = "359e7c72-a4ca-43ee-9203-f09cd0f149a9";
 const test_case_summary_ensemble = "pred-0";
 
 describe("Config", function () {
-  it("Should get a config object.", function () {
-    config = GetConfig("dev");
+  it("Should get a config object.", async function () {
+    config = await GetConfig("dev");
     assert(["url", "tenantId", "clientId", "scopes"].every((key) => key in config));
   });
 });
@@ -352,7 +352,7 @@ describe("test_metrics", async function () {
   });
 });
 
-describe("test_buckets", function () {
+describe("test_buckets", async function () {
   it("Verifies that composite and partitioned forms of terms aggregation give equivalent results.", async function () {
     const cse = await exp.get_case_by_uuid("359e7c72-a4ca-43ee-9203-f09cd0f149a9");
     const ens = cse.filter({ ensemble: "pred-0" });

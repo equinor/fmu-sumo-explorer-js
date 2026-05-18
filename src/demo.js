@@ -154,7 +154,7 @@ async function test7(exp) {
 }
 
 async function test8(exp) {
-  const config = GetConfig("dev");
+  const config = await GetConfig("dev");
   const credential = await GetCredential(config);
   const auth = await credential.getToken(config.scopes);
   console.log(JS(auth));

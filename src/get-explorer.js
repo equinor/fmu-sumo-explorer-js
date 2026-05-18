@@ -9,7 +9,7 @@ import Explorer from "./explorer/explorer.js";
  * @returns {Explorer}
  */
 async function GetExplorer(env) {
-  const config = GetConfig(env);
+  const config = await GetConfig(env);
   const credential = await GetCredential(config);
   const sumo = new SumoClient(config.url, credential, config.scopes);
   const exp = new Explorer(sumo);
