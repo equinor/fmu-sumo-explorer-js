@@ -39,7 +39,7 @@ describe("Config", function () {
   });
 });
 
-describe("Credential", async function () {
+describe("Credential", function () {
   it("Should get a credential object.", async function () {
     credential = await GetCredential(config);
     assert("getToken" in credential);
@@ -352,7 +352,7 @@ describe("test_metrics", async function () {
   });
 });
 
-describe("test_buckets", async function () {
+describe("test_buckets", function () {
   it("Verifies that composite and partitioned forms of terms aggregation give equivalent results.", async function () {
     const cse = await exp.get_case_by_uuid("359e7c72-a4ca-43ee-9203-f09cd0f149a9");
     const ens = cse.filter({ ensemble: "pred-0" });
