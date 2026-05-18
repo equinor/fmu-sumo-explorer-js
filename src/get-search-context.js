@@ -10,7 +10,7 @@ import SearchContextBase from "./explorer/objects/search-context-base.js";
  * @returns {SearchContextBase}
  */
 async function GetSearchContextBase(env, index) {
-  const config = GetConfig(env);
+  const config = await GetConfig(env);
   const credential = await GetCredential(config);
   const sumo = new SumoClient(config.url, credential, config.scopes);
   const exp = new SearchContextBase(sumo, { index });

@@ -1,47 +1,40 @@
-const config = {
-  localhost: {
-    url: "http://localhost:8084/api/v1",
-    tenantId: "3aa4a235-b6e2-48d5-9195-7fcf05b459b0",
-    clientId: "1826bd7c-582f-4838-880d-5b4da5c3eea2",
-    scopes: "api://88d2b022-3539-4dda-9e66-853801334a86/.default",
-  },
-  dev: {
-    url: "https://main-sumo-core-dev.c3.radix.equinor.com/api/v1",
-    tenantId: "3aa4a235-b6e2-48d5-9195-7fcf05b459b0",
-    clientId: "1826bd7c-582f-4838-880d-5b4da5c3eea2",
-    scopes: "api://88d2b022-3539-4dda-9e66-853801334a86/.default",
-  },
-  preview: {
-    url: "https://main-sumo-core-preview.c3.radix.equinor.com/api/v1",
-    tenantId: "3aa4a235-b6e2-48d5-9195-7fcf05b459b0",
-    clientId: "1826bd7c-582f-4838-880d-5b4da5c3eea2",
-    scopes: "api://88d2b022-3539-4dda-9e66-853801334a86/.default",
-  },
-  test: {
-    url: "https://main-sumo-core-test.c3.radix.equinor.com/api/v1",
-    tenantId: "3aa4a235-b6e2-48d5-9195-7fcf05b459b0",
-    clientId: "d57a8f87-4e28-4391-84d6-34356d5876a2",
-    scopes: "api://9e5443dd-3431-4690-9617-31eed61cb55a/.default",
-  },
-  prod: {
-    url: "https://main-sumo-core-prod.c3.radix.equinor.com/api/v1",
-    tenantId: "3aa4a235-b6e2-48d5-9195-7fcf05b459b0",
-    clientId: "d57a8f87-4e28-4391-84d6-34356d5876a2",
-    scopes: "api://9e5443dd-3431-4690-9617-31eed61cb55a/.default",
-  },
-};
+import axios from "axios";
+import axiosRetry from "axios-retry";
 
-function EnvNames() {
-  return Object.keys(config);
-}
+const WELL_KNOWN = process?.env?.SUMOCONNECTIONINFO || "https://api.sumo.equinor.com/well-known";
 
-function GetConfig(env) {
-  if (!(env in config)) {
-    throw `Unknown environment: ${env}`;
-  }
-  return config[env];
-}
+const { EnvNames, GetConfig } = (() => {
+  let config = null;
+  let _axios = axios.create();
+  axiosRetry(_axios, {
+    retryDelay: axiosRetry.exponentialDelay,
+    retryCondition: (error) =>
+      axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response?.status === 429,
+  });
+  const _getConfig = async () => {
+    if (!config) {
+      config = (await _axios.get(WELL_KNOWN)).data;
+    }
+    return config;
+  };
+  const EnvNames = async () => {
+    const config = await _getConfig();
+    return Object.keys(config.envs);
+  };
+  const GetConfig = async (env) => {
+    const config = await _getConfig();
+    if (!(env in config.envs)) {
+      throw `Unknown environment: ${env}`;
+    }
+    const tenant_id = config.tenant_id;
+    const authority = config.authority;
+    const { resource_id, client_id, base_url } = config.envs[env];
+    const scope = `api://${resource_id}/.default`;
+
+    return { url: base_url, tenantId: tenant_id, clientId: client_id, scopes: scope };
+  };
+  return { EnvNames, GetConfig };
+})();
 
 export { EnvNames, GetConfig };
-
 export default { EnvNames, GetConfig };
