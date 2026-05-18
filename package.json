@@ -1,6 +1,6 @@
 {
   "name": "@equinor/fmu-sumo-explorer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Package for working with FMU data stored in Sumo.",
   "license": "Apache-2.0",
   "author": "",
@@ -31,7 +31,7 @@
     "@azure/msal-node": "^5.1.5",
     "axios-retry": "^4.5.0",
     "lru-cache": "^11.2.2"
-   },
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.39.1",
