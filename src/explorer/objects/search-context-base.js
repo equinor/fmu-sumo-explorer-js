@@ -230,7 +230,6 @@ class SearchContextBase {
 
   /**
    * Get a list of buckets
-   * @private
    * @async
    * @param {str} field - a field in the metadata
    * @returns {Object[]} a list of unique values and counts [key, doc_count]
@@ -267,8 +266,7 @@ class SearchContextBase {
   }
 
   /**
-     { * Get a list of buckets, using partitioned gterms aggregation.
-   * @private
+     { * Get a list of buckets, using partitioned terms aggregation.
    * @async
    * @param {str} field - a field in the metadata
    * @returns {Object[]} a list of unique values and counts {key, doc_count}
