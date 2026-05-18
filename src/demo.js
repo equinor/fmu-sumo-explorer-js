@@ -257,6 +257,23 @@ async function test14(exp) {
   console.log(await rels.length());
 }
 
+async function test15(exp) {
+  const cse = await exp.get_case_by_uuid("359e7c72-a4ca-43ee-9203-f09cd0f149a9");
+  const ens = cse.filter({ ensemble: "pred-0" });
+  const rels = ens.tables().filter({ tagname: "summary", realization: true });
+  const b_comp = await rels._get_buckets("data.spec.columns.keyword");
+  const b_part = await rels._get_buckets_partitioned("data.spec.columns.keyword");
+  console.log("composite:  ", b_comp.length);
+  console.log("partitioned:", b_part.length);
+  console.log("composite:  ", b_comp.slice(0, 5));
+  console.log("partitioned:", b_part.slice(0, 5));
+  console.log(
+    "equal",
+    new Set(b_comp.map((b) => b[0])).symmetricDifference(new Set(b_part.map((b) => b[0]))).size ==
+      0,
+  );
+}
+
 async function main() {
   const exp = await GetExplorer("dev");
 
@@ -286,7 +303,9 @@ async function main() {
 
   // await test13();
 
-  await test14(exp);
+  // await test14(exp);
+
+  await test15(exp);
 }
 
 try {

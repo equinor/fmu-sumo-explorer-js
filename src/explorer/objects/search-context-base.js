@@ -44,6 +44,14 @@ function _build_composite_query(query, fields, size) {
   };
 }
 
+function _extract_buckets(bucketlist, field = null) {
+  if (field != null) {
+    return bucketlist.map((bucket) => [bucket.key[field], bucket.doc_count]);
+  } else {
+    return bucketlist.map((bucket) => [bucket.key, bucket.doc_count]);
+  }
+}
+
 function _extract_composite_results(res) {
   const aggs = res.aggregations.composite;
   const after_key = aggs.after_key;
@@ -225,17 +233,17 @@ class SearchContextBase {
    * @private
    * @async
    * @param {str} field - a field in the metadata
-   * @returns {Object[]} a list of unique values and counts {key, doc_count}
+   * @returns {Object[]} a list of unique values and counts [key, doc_count]
    */
   async _get_buckets(field) {
-    const buckets_per_batch = 1000;
+    const buckets_per_batch = 10000;
     // fast path: try without Pit
     let query = _build_bucket_query_simple(this.query(), field, buckets_per_batch);
     const res = (await this.sumo.post("/search", query, { index: this.index })).data;
     const other_docs_count = res.aggregations[field].sum_other_doc_count;
     if (other_docs_count == 0) {
       let buckets = res.aggregations[field].buckets;
-      return buckets.map(({ key, doc_count }) => ({ key, doc_count }));
+      return buckets.map(({ key, doc_count }) => [key, doc_count]);
     }
     // ELSE
     query = _build_bucket_query(this.query(), field, buckets_per_batch);
@@ -246,12 +254,8 @@ class SearchContextBase {
       query = pit.stamp_query(_set_after_key(query, field, after_key));
       const res = (await this.sumo.post("/search", query, { index: this.index })).data;
       pit.update_from_result(res);
-      let buckets = res.aggregations[field].buckets;
       after_key = res.aggregations[field].after_key;
-      buckets = buckets.map(({ key, doc_count }) => ({
-        key: key[field],
-        doc_count,
-      }));
+      const buckets = _extract_buckets(res.aggregations[field].buckets, field);
       all_buckets = all_buckets.concat(buckets);
       if (buckets.length < buckets_per_batch) {
         break;
@@ -263,6 +267,48 @@ class SearchContextBase {
   }
 
   /**
+     { * Get a list of buckets, using partitioned gterms aggregation.
+   * @private
+   * @async
+   * @param {str} field - a field in the metadata
+   * @returns {Object[]} a list of unique values and counts {key, doc_count}
+   */
+  async _get_buckets_partitioned(field) {
+    const buckets_per_partition = 10000;
+    const nvals = await this.metrics().cardinality(field);
+    const num_partitions = Math.ceil(nvals / buckets_per_partition);
+    let qdoc = {
+      query: this.query(),
+      size: 0,
+      aggs: {
+        values: {
+          terms: {
+            field: field,
+            include: {
+              partition: 0,
+              num_partitions: num_partitions,
+            },
+            size: buckets_per_partition,
+          },
+        },
+      },
+    };
+    let all_buckets = [];
+    const pit = await Pit.create(this.sumo, this.index, "1m");
+    for (let p = 0; p < num_partitions; p++) {
+      qdoc = pit.stamp_query(qdoc);
+      qdoc.aggs.values.terms.include.partition = p;
+      const res = (await this.sumo.post("/search", qdoc, { index: this.index })).data;
+      pit.update_from_result(res);
+
+      const buckets = _extract_buckets(res.aggregations.values.buckets);
+      all_buckets = all_buckets.concat(buckets);
+    }
+    await pit.destroy();
+    return all_buckets.sort((a, b) => -(a[1] - b[1]));
+  }
+
+  /**
    * Get unique values for property.
    * @async
    * @param {string} field - Property.
@@ -270,8 +316,8 @@ class SearchContextBase {
    */
   async get_field_values(field) {
     if (!(field in this.#field_values)) {
-      const buckets = await this._get_buckets(field);
-      this.#field_values[field] = buckets.map(({ key }) => key);
+      const buckets = await this._get_buckets_partitioned(field);
+      this.#field_values[field] = buckets.map(([key, value]) => key);
     }
     return this.#field_values[field];
   }
@@ -280,11 +326,11 @@ class SearchContextBase {
    * Get unique values for property, along with their counts.
    * @async
    * @param {string} field - Property.
-   * @returns {Object[]} a list of unique values and counts {key, doc_count}
+   * @returns {Object[]} a list of unique values and counts [key, doc_count]
    */
   async get_field_values_and_counts(field) {
     if (!(field in this.#field_values_and_counts)) {
-      this.#field_values_and_counts[field] = await this._get_buckets(field);
+      this.#field_values_and_counts[field] = await this._get_buckets_partitioned(field);
     }
     return this.#field_values_and_counts[field];
   }

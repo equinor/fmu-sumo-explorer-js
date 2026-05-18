@@ -29,6 +29,9 @@ const test_case_uuid = "2c2f47cf-c7ab-4112-87f9-b4797ec51cb6";
 
 const test_case_seismic_uuid = "c616019d-d344-4094-b2ee-dd4d6d336217";
 
+const test_case_summary = "359e7c72-a4ca-43ee-9203-f09cd0f149a9";
+const test_case_summary_ensemble = "pred-0";
+
 describe("Config", function () {
   it("Should get a config object.", function () {
     config = GetConfig("dev");
@@ -297,7 +300,7 @@ describe("test_reference_realization_fallback", function () {
   });
 });
 
-describe("test_metrics", function () {
+describe("test_metrics", async function () {
   it("Verifies that the various metrics methods work.", async function () {
     const cases = await exp
       .surfaces()
@@ -346,5 +349,39 @@ describe("test_metrics", function () {
       await rels.metrics().percentiles("file.size_bytes", [10, 50, 90]),
     );
     console.log("fnv1a", await rels.metrics().fnv1a("file.checksum_md5.keyword"));
+  });
+});
+
+describe("test_buckets", async function () {
+  it("Verifies that composite and partitioned forms of terms aggregation give equivalent results.", async function () {
+    const cse = await exp.get_case_by_uuid("359e7c72-a4ca-43ee-9203-f09cd0f149a9");
+    const ens = cse.filter({ ensemble: "pred-0" });
+    const rels = ens.tables().filter({ tagname: "summary", realization: true });
+    const b_comp = await rels._get_buckets("data.spec.columns.keyword");
+    const b_part = await rels._get_buckets_partitioned("data.spec.columns.keyword");
+    assert(b_comp.length > 0);
+    assert(b_part.length == b_comp.length);
+
+    const m_comp = new Map();
+    const m_part = new Map();
+    for (const [key, value] of b_comp) {
+      m_comp.set(key, value);
+    }
+    for (const [key, value] of b_part) {
+      m_part.set(key, value);
+    }
+
+    const s_comp = new Set(m_comp.keys());
+    const s_part = new Set(m_part.keys());
+    const s_diff = s_comp.symmetricDifference(s_part);
+    assert(s_diff.size == 0);
+
+    let mismatches = 0;
+    for (const key of m_comp.keys()) {
+      if (m_comp[key] !== m_part[key]) {
+        mismatches++;
+      }
+    }
+    assert(mismatches == 0);
   });
 });
