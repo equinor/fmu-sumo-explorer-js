@@ -230,10 +230,37 @@ async function test13() {
   }
 }
 
+async function test14(exp) {
+  const cse = await exp.get_case_by_uuid("359e7c72-a4ca-43ee-9203-f09cd0f149a9");
+  const ens = cse.filter({ ensemble: "pred-0" });
+  const rels = ens.tables().filter({ tagname: "summary", realization: true });
+  for (const agg of [
+    "min",
+    "max",
+    "avg",
+    "sum",
+    "value_count",
+    "cardinality",
+    "stats",
+    "extended_stats",
+    "percentiles",
+  ]) {
+    const res = await rels.metrics()[agg]("_sumo.blob_size");
+    console.log(agg, JS(res));
+  }
+
+  try {
+    console.log(await rels.metrics().fnv1a("_sumo.blob_name.keyword"));
+  } catch (ex) {
+    // nada
+  }
+  console.log(await rels.length());
+}
+
 async function main() {
   const exp = await GetExplorer("dev");
 
-  await test1(exp);
+  // await test1(exp);
 
   // await test2(exp);
 
@@ -258,6 +285,8 @@ async function main() {
   // await test12();
 
   // await test13();
+
+  await test14(exp);
 }
 
 try {

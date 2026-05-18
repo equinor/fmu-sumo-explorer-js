@@ -296,3 +296,55 @@ describe("test_reference_realization_fallback", function () {
     }
   });
 });
+
+describe("test_metrics", function () {
+  it("Verifies that the various metrics methods work.", async function () {
+    const cases = await exp
+      .surfaces()
+      .filter({
+        realization: 100,
+        complex: {
+          bool: {
+            must: [
+              { exists: { field: "file.size_bytes" } },
+              { exists: { field: "file.checksum_md5" } },
+            ],
+          },
+        },
+      })
+      .cases();
+    assert((await cases.length()) > 0);
+    const cse = await cases
+      .sort([{ "_sumo.timestamp": { order: "desc" } }])
+      .limit(1)
+      .single();
+    console.log("Case:", cse.id);
+    const ens = await (await cse.ensembles()).get(0);
+    const surface_entities = await ens.surfaces().entities();
+    const rels = ens.filter({
+      ensemble: ens.name(),
+      entity: surface_entities[0],
+      realization: true,
+    });
+    for (const agg of [
+      "min",
+      "max",
+      "avg",
+      "sum",
+      "value_count",
+      "cardinality",
+      "stats",
+      "extended_stats",
+      "percentiles",
+    ]) {
+      const res = await rels.metrics()[agg]("file.size_bytes");
+      console.log(agg, JS(res));
+    }
+
+    console.log(
+      "percentiles [10, 50, 90]",
+      await rels.metrics().percentiles("file.size_bytes", [10, 50, 90]),
+    );
+    console.log("fnv1a", await rels.metrics().fnv1a("file.checksum_md5.keyword"));
+  });
+});
