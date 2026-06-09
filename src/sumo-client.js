@@ -95,6 +95,20 @@ class SumoClient {
   }
 
   /**
+   * Perform HTTP PATCH.
+   * @param {string} url request url (relative to baseUrl)
+   * @param {} data upload body
+   * @param {Object} params key/value map of parameters
+   * @param {Object} config additional settings for request (e.g, headers)
+   */
+  async patch(url, data, params = {}, config = {}) {
+    return this.#axios.patch(url, data, {
+      headers: await this.#headers(config.headers),
+      params,
+    });
+  }
+
+  /**
    * Perform HTTP DELETE.
    * @param {string} url request url (relative to baseUrl)
    * @param {Object} params key/value map of parameters
