@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.1.0...1.2.0) (2026-06-10)
+
+
+### Features
+
+* add patch method to sumoclient ([#47](https://github.com/equinor/fmu-sumo-explorer-js/issues/47)) ([6a89673](https://github.com/equinor/fmu-sumo-explorer-js/commit/6a89673dc123b802dd35af9f2f4666c6f14ffa33))
+
 ## [1.1.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/v1.0.0...1.1.0) (2026-05-18)
 
 
