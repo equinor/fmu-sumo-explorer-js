@@ -151,6 +151,24 @@ class SearchContextBase {
   }
 
   /**
+   * API: Perform search operation
+   * @async
+   * @param {Object} qdoc query specification
+   */
+  async do_search(qdoc) {
+    return await this.sumo.post("/search", qdoc, { index: this.index });
+  }
+
+  /**
+   * API: Perform count operation
+   * @async
+   * @param {Object} qdoc query specification
+   */
+  async do_count(qdoc) {
+    return await this.sumo.post("/count", qdoc, { index: this.index });
+  }
+
+  /**
    * Generate Elasticsearch query for context.
    * @returns {Object} Nested map containing a valid Elasticsearch query.
    */
@@ -175,9 +193,7 @@ class SearchContextBase {
       return this.hits.length;
     }
     if (this.#length === null) {
-      this.#length = (
-        await this.sumo.post("/count", { query: this.query() }, { index: this.index })
-      ).data.count;
+      this.#length = (await this.do_count({ query: this.query() })).data.count;
       if (this.#limit !== null) {
         this.#length = Math.min(this.#length, this.#limit);
       }
@@ -192,13 +208,13 @@ class SearchContextBase {
       _source: select,
       sort: this.#sort,
     };
-    let tot_count = (await this.sumo.post("/count", { query }, { index: this.index })).data.count;
+    let tot_count = (await this.do_count({ query })).data.count;
     if (this.#limit !== null) {
       tot_count = Math.min(tot_count, this.#limit);
     }
     if (tot_count <= size) {
       qdoc.size = tot_count;
-      const res = await this.sumo.post("/search", qdoc, { index: this.index });
+      const res = await this.do_search(qdoc);
       const hits = res.data.hits.hits;
       return select === false ? hits.map((h) => h._id) : hits;
     } else {
@@ -207,7 +223,7 @@ class SearchContextBase {
       const pit = await Pit.create(this.sumo, this.index, "1m");
       while (all_hits.length < tot_count) {
         qdoc = pit.stamp_query(_set_search_after(qdoc, after));
-        const res = await this.sumo.post("/search", qdoc, { index: this.index });
+        const res = await this.do_search(qdoc);
         pit.update_from_result(res.data);
         const hits = res.data.hits.hits;
         if (hits.length === 0) {
@@ -238,7 +254,7 @@ class SearchContextBase {
     const buckets_per_batch = 10000;
     // fast path: try without Pit
     let query = _build_bucket_query_simple(this.query(), field, buckets_per_batch);
-    const res = (await this.sumo.post("/search", query, { index: this.index })).data;
+    const res = (await this.do_search(query)).data;
     const other_docs_count = res.aggregations[field].sum_other_doc_count;
     if (other_docs_count == 0) {
       let buckets = res.aggregations[field].buckets;
@@ -251,7 +267,7 @@ class SearchContextBase {
     const pit = await Pit.create(this.sumo, this.index, "1m");
     while (true) {
       query = pit.stamp_query(_set_after_key(query, field, after_key));
-      const res = (await this.sumo.post("/search", query, { index: this.index })).data;
+      const res = (await this.do_search(query)).data;
       pit.update_from_result(res);
       after_key = res.aggregations[field].after_key;
       const buckets = _extract_buckets(res.aggregations[field].buckets, field);
@@ -296,7 +312,7 @@ class SearchContextBase {
     for (let p = 0; p < num_partitions; p++) {
       qdoc = pit.stamp_query(qdoc);
       qdoc.aggs.values.terms.include.partition = p;
-      const res = (await this.sumo.post("/search", qdoc, { index: this.index })).data;
+      const res = (await this.do_search(qdoc)).data;
       pit.update_from_result(res);
 
       const buckets = _extract_buckets(res.aggregations.values.buckets);
@@ -354,7 +370,7 @@ class SearchContextBase {
         },
       },
     };
-    const res = (await this.sumo.post("/search", qdoc, { index: this.index })).data;
+    const res = (await this.do_search(qdoc)).data;
     return res.aggregations.values.buckets.map(({ key }) => key);
   }
 
@@ -372,7 +388,7 @@ class SearchContextBase {
     const pit = await Pit.create(this.sumo, this.index, "1m");
     while (true) {
       query = pit.stamp_query(_set_after_key(query, "composite", after_key));
-      const res = (await this.sumo.post("/search", query, { index: this.index })).data;
+      const res = (await this.do_search(query)).data;
       pit.update_from_result(res);
       let [buckets, a_k] = _extract_composite_results(res);
       after_key = a_k;
@@ -489,7 +505,7 @@ class SearchContextBase {
         size: 1,
         _source: this.#select,
       };
-      let res = await this.sumo.post("/search", query, { index: this.index });
+      let res = await this.do_search(query);
       let hits = res.data.hits.hits;
       if (hits.length == 0) {
         throw `Document not found: ${uuid}.`;
