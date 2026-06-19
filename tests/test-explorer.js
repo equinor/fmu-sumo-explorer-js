@@ -75,7 +75,7 @@ describe("get_cases_fields", function () {
     const cases = (await exp.cases()).filter({ field: "DROGON" });
     for await (const c of cases) {
       assert(c instanceof ExplorerObjects.Case);
-      assert(c.field().toLowerCase() == "drogon");
+      assert.equal(c.field().toLowerCase(), "drogon");
     }
   });
 });
@@ -85,7 +85,7 @@ describe("get_cases_status", function () {
     const cases = (await exp.cases()).filter({ status: "keep" });
     for await (const c of cases) {
       assert(c instanceof ExplorerObjects.Case);
-      assert(c.status() == "keep");
+      assert.equal(c.status(), "keep");
     }
   });
 });
@@ -95,7 +95,7 @@ describe("get_cases_user", function () {
     const cases = (await exp.cases()).filter({ user: "peesv" });
     for await (const c of cases) {
       assert(c instanceof ExplorerObjects.Case);
-      assert(c.user() == "peesv");
+      assert.equal(c.user(), "peesv");
     }
   });
 });
@@ -113,7 +113,7 @@ describe("get_cases_users_combinations", function () {
     for await (const c of cases) {
       assert(fields.indexOf(c.field()) >= 0);
       assert(users.indexOf(c.user()) >= 0);
-      assert(c.status() == statuses); // sic.
+      assert.equal(c.status(), statuses); // sic.
     }
   });
 });
@@ -122,72 +122,75 @@ describe("get_test_case", function () {
   it("Get test case object.", async function () {
     test_case = await exp.get_case_by_uuid(test_case_uuid);
     assert(test_case instanceof ExplorerObjects.Case);
-    assert(test_case.id == test_case_uuid);
+    assert.equal(test_case.id, test_case_uuid);
   });
 });
 
 describe("case_surfaces_type", function () {
   it("All objects should be of class Surface.", async function () {
     const classes = await test_case.surfaces().classes();
-    assert(classes.length == 1);
-    assert(classes[0] == "surface");
+    assert.equal(classes.length, 1);
+    assert.equal(classes[0], "surface");
   });
 });
 
 describe("case_surfaces_size", function () {
   it("Verify that test_case has the expected number of surfaces.", async function () {
-    assert((await test_case.surfaces().length()) == 271);
+    assert.equal(await test_case.surfaces().length(), 271);
   });
 });
 
 describe("case_surfaces.filter", function () {
   it("Verifies counts of various surfaces in test case.", async function () {
     const case_surfaces = test_case.surfaces();
-    assert((await case_surfaces.filter({ stage: "ensemble" }).length()) == 59);
-    assert((await case_surfaces.filter({ aggregation: true }).length()) == 59);
+    assert.equal(await case_surfaces.filter({ stage: "ensemble" }).length(), 59);
+    assert.equal(await case_surfaces.filter({ aggregation: true }).length(), 59);
 
-    assert((await case_surfaces.filter({ stage: "realization" }).length()) == 212);
-    assert((await case_surfaces.filter({ realization: true }).length()) == 212);
+    assert.equal(await case_surfaces.filter({ stage: "realization" }).length(), 212);
+    assert.equal(await case_surfaces.filter({ realization: true }).length(), 212);
 
     let surf_reals = case_surfaces.filter({
       realization: true,
       ensemble: "iter-0",
     });
-    assert((await surf_reals.length()) == 212);
+    assert.equal(await surf_reals.length(), 212);
 
     const ensnames = await surf_reals.get_field_values("fmu.ensemble.name.keyword");
-    assert(ensnames.length == 1 && ensnames[0] == "iter-0");
+    assert.equal(ensnames.length, 1);
+    assert.equal(ensnames[0], "iter-0");
 
-    assert((await surf_reals.filter({ name: "__not_valid__" }).length()) == 0);
+    assert.equal(await surf_reals.filter({ name: "__not_valid__" }).length(), 0);
 
     surf_reals = surf_reals.filter({ name: "Valysar Fm." });
-    assert((await surf_reals.length()) == 56);
+    assert.equal(await surf_reals.length(), 56);
     const ens_names_valysar = await surf_reals.get_field_values("fmu.ensemble.name.keyword");
-    assert(ens_names_valysar.length == 1 && ens_names_valysar[0] == "iter-0");
+    assert.equal(ens_names_valysar.length, 1);
+    assert.equal(ens_names_valysar[0], "iter-0");
     const data_names_valysar = await surf_reals.get_field_values("data.name.keyword");
-    assert(data_names_valysar.length == 1 && data_names_valysar[0] == "Valysar Fm.");
+    assert.equal(data_names_valysar.length, 1);
+    assert.equal(data_names_valysar[0], "Valysar Fm.");
 
-    assert((await surf_reals.filter({ content: "__not_valid__" }).length()) == 0);
+    assert.equal(await surf_reals.filter({ content: "__not_valid__" }).length(), 0);
     surf_reals = surf_reals.filter({ content: "depth" });
-    assert((await surf_reals.length()) == 56);
+    assert.equal(await surf_reals.length(), 56);
 
-    assert((await surf_reals.filter({ tagname: "__not_valid__" }).length()) == 0);
+    assert.equal(await surf_reals.filter({ tagname: "__not_valid__" }).length(), 0);
     surf_reals = surf_reals.filter({ tagname: "FACIES_Fraction_Channel" });
-    assert((await surf_reals.length()) == 4);
+    assert.equal(await surf_reals.length(), 4);
 
-    assert((await surf_reals.filter({ dataformat: "__not_valid__" }).length()) == 0);
+    assert.equal(await surf_reals.filter({ dataformat: "__not_valid__" }).length(), 0);
     surf_reals = surf_reals.filter({ dataformat: "irap_binary" });
-    assert((await surf_reals.length()) == 4);
+    assert.equal(await surf_reals.length(), 4);
 
     const one_real = await surf_reals
       .filter({
         realization: 0,
       })
       .single();
-    assert(one_real.ensemble() == "iter-0");
-    assert(one_real.name() == "Valysar Fm.");
-    assert(one_real.tagname() == "FACIES_Fraction_Channel");
-    assert(one_real.realization() == 0);
+    assert.equal(one_real.ensemble(), "iter-0");
+    assert.equal(one_real.name(), "Valysar Fm.");
+    assert.equal(one_real.tagname(), "FACIES_Fraction_Channel");
+    assert.equal(one_real.realization(), 0);
   });
 });
 
@@ -217,7 +220,7 @@ describe("test_grids_and_properties", function () {
     });
     const cgs = new Set(await cases_with_grids.uuids());
     const cgps = new Set(await cases_with_gridprops.uuids());
-    assert(cgps.difference(cgs).size == 0);
+    assert.equal(cgps.difference(cgs).size, 0);
     const cse = await cases_with_gridprops.get(0);
     const grids = cse.cpgrids();
     const grid = await grids.get(0);
@@ -225,7 +228,7 @@ describe("test_grids_and_properties", function () {
     const gridp0 = await (await grid.grid_properties()).get(0);
     assert(gridp0 instanceof ExplorerObjects.CPGridProperty);
     const grid2 = await gridp0.grid();
-    assert(grid.id == grid2.id);
+    assert.equal(grid.id, grid2.id);
   });
 });
 
@@ -271,7 +274,7 @@ describe("test_reference_realizations", function () {
       const ens = await (await refs.ensembles()).get(0);
       const ensrefs = await ens.reference_realizations();
       assert((await ensrefs.length()) > 0);
-      assert((await ensrefs.length()) == (await ensrefs.realizationids()).length);
+      assert.equal(await ensrefs.length(), (await ensrefs.realizationids()).length);
     }
   });
 });
@@ -294,7 +297,7 @@ describe("test_reference_realization_fallback", function () {
         const refs = await (await ens.get(0)).reference_realizations();
         assert((await refs.length()) == 1 || (await refs.length()) == 2);
         const refids = await refs.realizationids();
-        assert(new Set(refids).difference(new Set([0, 1])).size == 0);
+        assert.equal(new Set(refids).difference(new Set([0, 1])).size, 0);
       }
     }
   });
@@ -360,7 +363,7 @@ describe("test_buckets", async function () {
     const b_comp = await rels._get_buckets("data.spec.columns.keyword");
     const b_part = await rels._get_buckets_partitioned("data.spec.columns.keyword");
     assert(b_comp.length > 0);
-    assert(b_part.length == b_comp.length);
+    assert.equal(b_part.length, b_comp.length);
 
     const m_comp = new Map();
     const m_part = new Map();
@@ -374,7 +377,7 @@ describe("test_buckets", async function () {
     const s_comp = new Set(m_comp.keys());
     const s_part = new Set(m_part.keys());
     const s_diff = s_comp.symmetricDifference(s_part);
-    assert(s_diff.size == 0);
+    assert.equal(s_diff.size, 0);
 
     let mismatches = 0;
     for (const key of m_comp.keys()) {
@@ -382,6 +385,6 @@ describe("test_buckets", async function () {
         mismatches++;
       }
     }
-    assert(mismatches == 0);
+    assert.equal(mismatches, 0);
   });
 });
