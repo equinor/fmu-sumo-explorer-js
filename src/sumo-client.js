@@ -18,7 +18,7 @@ class SumoClient {
    *
    * @returns {SumoClient}
    */
-  constructor(baseUrl, credential, scope) {
+  constructor(baseUrl, credential = null, scope = null) {
     this.#credential = credential;
     this.#scope = scope;
     this.#baseUrl = baseUrl;
@@ -42,6 +42,9 @@ class SumoClient {
    * @returns {Object}: key/value map of http headers
    */
   async #headers(headers_in) {
+    if (this.#credential == null) {
+      return headers_in;
+    }
     if (this.#cachedtoken == null || this.#cachedtoken.expiresOnTimestamp < Date.now() - 1000) {
       this.#cachedtoken = await this.#credential.getToken(this.#scope);
     }
