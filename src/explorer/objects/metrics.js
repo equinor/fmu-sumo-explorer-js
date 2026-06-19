@@ -15,7 +15,7 @@ class Metrics {
       agg: { [op]: args },
     };
     const qdoc = { query: this.#searchContext.query(), aggs: aggs, size: 0 };
-    const { data } = await this.#searchContext.sumo.post("/search", qdoc);
+    const { data } = await this.#searchContext.do_search(qdoc);
     return data.aggregations.agg;
   }
 

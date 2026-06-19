@@ -519,7 +519,7 @@ class SearchContext extends SearchContextBase {
   async _verify_aggregation_operation(columns) {
     const sc = this.filter({ column: columns });
     const query = sc.__prepare_verify_aggregation_query();
-    const sres = await sc.sumo.post("/search", query, { index: this.index });
+    const sres = await sc.do_search(query, this.index);
     const { caseuuid, ensemblename, entityuuid, classname, tot_hits } =
       this.__verify_aggregation_operation(sres.data);
     const sc2 = new SearchContext(this.sumo).filter({
