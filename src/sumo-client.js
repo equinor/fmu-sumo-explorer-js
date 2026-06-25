@@ -18,9 +18,10 @@ class SumoClient {
    *
    * @returns {SumoClient}
    */
-  constructor(baseUrl, credential = null, scope = null) {
+  constructor(baseUrl, credential = null, scope = null, auth) {
     this.#credential = credential;
     this.#scope = scope;
+    this.#auth = auth;
     this.#baseUrl = baseUrl;
     this.#axios = axios.create({
       baseURL: baseUrl,
@@ -65,6 +66,7 @@ class SumoClient {
   async get(url, params = {}, config = {}) {
     return this.#axios.get(url, {
       headers: await this.#headers(config.headers),
+      ...(this.#auth && { auth: this.#auth }),
       params,
     });
   }
@@ -79,6 +81,7 @@ class SumoClient {
   async post(url, data, params = {}, config = {}) {
     return this.#axios.post(url, data, {
       headers: await this.#headers(config.headers),
+      ...(this.#auth && { auth: this.#auth }),
       params,
     });
   }
@@ -93,6 +96,7 @@ class SumoClient {
   async put(url, data, params = {}, config = {}) {
     return this.#axios.put(url, data, {
       headers: await this.#headers(config.headers),
+      ...(this.#auth && { auth: this.#auth }),
       params,
     });
   }
@@ -107,6 +111,7 @@ class SumoClient {
   async patch(url, data, params = {}, config = {}) {
     return this.#axios.patch(url, data, {
       headers: await this.#headers(config.headers),
+      ...(this.#auth && { auth: this.#auth }),
       params,
     });
   }
@@ -120,6 +125,7 @@ class SumoClient {
   async delete(url, params, config = {}) {
     return this.#axios.delete(url, {
       headers: await this.#headers(config.headers),
+      ...(this.#auth && { auth: this.#auth }),
       params,
     });
   }
