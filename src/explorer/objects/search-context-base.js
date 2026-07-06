@@ -605,7 +605,7 @@ class SearchContextBase {
         must.push(value);
       }
     });
-    return new SearchContextBase(this.sumo, {
+    return new this.constructor(this.sumo, {
       must,
       must_not,
       index: this.index,
