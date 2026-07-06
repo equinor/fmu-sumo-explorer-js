@@ -6,6 +6,8 @@ import * as ExplorerObjects from "./explorer/objects.js";
 
 import GetExplorer from "./get-explorer.js";
 import GetSearchContextBase from "./get-search-context.js";
+import SearchContextBase from "./explorer/objects/search-context-base.js";
+import SearchContext from "./explorer/objects/search-context.js";
 
 export {
   GetConfig,
@@ -16,6 +18,8 @@ export {
   ExplorerObjects,
   GetExplorer,
   GetSearchContextBase,
+  SearchContextBase,
+  SearchContext,
 };
 
 export default {
@@ -27,4 +31,6 @@ export default {
   ExplorerObjects,
   GetExplorer,
   GetSearchContextBase,
+  SearchContextBase,
+  SearchContext,
 };
