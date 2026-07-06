@@ -9,6 +9,7 @@ class SumoClient {
   #baseUrl;
   #credential;
   #scope;
+  #auth;
   #cachedtoken;
   /**
    * Constructor
