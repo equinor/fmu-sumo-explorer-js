@@ -13,8 +13,16 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
       - name: Release with release please
         uses: googleapis/release-please-action@v5
         id: release
         with:
           target-branch: main
+          token: ${{ steps.app-token.outputs.token }}

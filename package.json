@@ -17,6 +17,9 @@
   "files": [
     "src/**/*"
   ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "mocha tests/test-explorer",
     "demo": "node --experimental-fetch src/demo.js",
