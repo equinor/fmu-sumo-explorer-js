@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.3.0...1.3.1) (2026-07-10)
+
+
+### Bug Fixes
+
+* add repository info to package.json (needed for npm publish ... --provenance). ([d373197](https://github.com/equinor/fmu-sumo-explorer-js/commit/d373197af54fad3995d47541dff8fe9c208b8be3))
+* Add scope to package name. ([0965191](https://github.com/equinor/fmu-sumo-explorer-js/commit/0965191495c92c463d0f1f735bd18fb0a91d9580))
+
 ## [1.3.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.2.0...1.3.0) (2026-07-10)
 
 
