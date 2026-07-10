@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.3.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.2.0...1.3.0) (2026-07-10)
+
+
+### Features
+
+* allow sumo-client to be used without credentials. next: add support for basic auth ([38dd65a](https://github.com/equinor/fmu-sumo-explorer-js/commit/38dd65ab01ed8681d5ae4831df4dcd0d420bfe37))
+* create member methods do_search and do_count, so that we can later implement subclasses that (e.g,) queries elasticsearch directly instead of through sumo... allowing us to use fmu-sumo-explorer internally in sumo-core. ([7f96806](https://github.com/equinor/fmu-sumo-explorer-js/commit/7f9680651a8528c2a4ed9107e8728ed0ce3291f6))
+* support 'basic' authentication for SumoClient. ([b42bb89](https://github.com/equinor/fmu-sumo-explorer-js/commit/b42bb8961499def44f9f2830fde5ee5653c4f89b))
+
+
+### Bug Fixes
+
+* added private member #auth. ([6d256de](https://github.com/equinor/fmu-sumo-explorer-js/commit/6d256deeb984156a4f424c9d0e34a4b25b3dd28f))
+* export a few more classes. ([8fb380d](https://github.com/equinor/fmu-sumo-explorer-js/commit/8fb380ddbb23746e9c2a8c156e6c07abdf0dc6b8))
+* remove spurious parameter left after refactoring. ([a33c343](https://github.com/equinor/fmu-sumo-explorer-js/commit/a33c343dc332757d052e6cb8d750e749eb978746))
+* use this.constructor to create new searchcontext. ([0c8f779](https://github.com/equinor/fmu-sumo-explorer-js/commit/0c8f779008a5f53055d707e53e3a52f8e868572f))
+
 ## [1.2.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.1.0...1.2.0) (2026-06-10)
 
 
