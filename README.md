@@ -13,7 +13,7 @@ npm install fmu-sumo-explorer
 ## Import:
 
 ```
-import { GetExplorer, ExplorerObjects } from 'fmu-sumo-explorer';
+import { GetExplorer, ExplorerObjects } from '@equinor/fmu-sumo-explorer';
 
 // ExplorerObjects contains named exports for Case, Cases, Ensemble, etc.
 
