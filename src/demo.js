@@ -274,6 +274,29 @@ async function test15(exp) {
   );
 }
 
+async function test16(exp) {
+  const cse = await exp.get_case_by_uuid("2c2f47cf-c7ab-4112-87f9-b4797ec51cb6");
+  const ens = cse.filter({ ensemble: "iter-0" });
+  const rels = ens.surfaces().filter({ realization: true });
+  const sources = [
+    { k_name: { terms: { field: "data.name.keyword" } } },
+    { k_tagname: { terms: { field: "data.tagname.keyword" } } },
+  ];
+  const sub_aggs = {
+    agg_value_min: { min: { field: "data.bbox.zmin" } },
+    agg_value_max: { max: { field: "data.bbox.zmax" } },
+  };
+  const buckets = await rels.get_composite_buckets(sources, sub_aggs);
+  assert(buckets.length == 37);
+  console.log(JS(buckets));
+  assert(buckets.every((b) => b.doc_count > 0));
+  const bucket = buckets.find(
+    (b) => b.key.k_name == "Therys Fm." && b.key.k_tagname == "PHIT_Average",
+  );
+  assert(bucket.agg_value_min.value == 0.0);
+  assert(Math.abs(bucket.agg_value_max.value - 0.34) <= 0.001);
+}
+
 async function main() {
   const exp = await GetExplorer("dev");
 
@@ -305,7 +328,9 @@ async function main() {
 
   // await test14(exp);
 
-  await test15(exp);
+  // await test15(exp);
+
+  await test16(exp);
 }
 
 try {
