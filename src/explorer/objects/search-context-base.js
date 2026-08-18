@@ -44,12 +44,34 @@ function _build_composite_query(query, fields, size) {
   };
 }
 
+function _build_composite_buckets_query(query, sources, sub_aggs, size) {
+  return {
+    size: 0,
+    query,
+    aggs: {
+      composite: {
+        composite: {
+          size,
+          sources,
+        },
+        ...(sub_aggs && { aggs: sub_aggs }),
+      },
+    },
+  };
+}
+
 function _extract_buckets(bucketlist, field = null) {
   if (field != null) {
     return bucketlist.map((bucket) => [bucket.key[field], bucket.doc_count]);
   } else {
     return bucketlist.map((bucket) => [bucket.key, bucket.doc_count]);
   }
+}
+
+function _extract_composite_buckets(res) {
+  const aggs = res.aggregations.composite;
+  const after_key = aggs.after_key;
+  return [aggs.buckets, after_key];
 }
 
 function _extract_composite_results(res) {
@@ -391,6 +413,37 @@ class SearchContextBase {
       const res = (await this.do_search(query)).data;
       pit.update_from_result(res);
       let [buckets, a_k] = _extract_composite_results(res);
+      after_key = a_k;
+      if (buckets.length == 0) {
+        break;
+      }
+      all_buckets = all_buckets.concat(buckets);
+      if (buckets.length < buckets_per_batch) {
+        break;
+      }
+    }
+    await pit.destroy();
+    return all_buckets;
+  }
+
+  /**
+   * Get composite aggregation with sub-aggregations.
+   * @async
+   * @param {Object[]} sources - List of sources for composite aggregation.
+   * @param {Object} sub_aggs - Sub-aggregations to perform on each bucket.
+   * @returns {Object[]} List of combinations of values and their sub-aggregation results.
+   */
+  async get_composite_buckets(sources, sub_aggs) {
+    const buckets_per_batch = 1000;
+    let query = _build_composite_buckets_query(this.query(), sources, sub_aggs, buckets_per_batch);
+    let all_buckets = [];
+    let after_key = null;
+    const pit = await Pit.create(this.sumo, this.index, "1m");
+    while (true) {
+      query = pit.stamp_query(_set_after_key(query, "composite", after_key));
+      const res = (await this.do_search(query)).data;
+      pit.update_from_result(res);
+      let [buckets, a_k] = _extract_composite_buckets(res);
       after_key = a_k;
       if (buckets.length == 0) {
         break;

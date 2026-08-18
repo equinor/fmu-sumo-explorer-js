@@ -388,3 +388,44 @@ describe("test_buckets", async function () {
     assert.equal(mismatches, 0);
   });
 });
+
+describe("test_composite_buckets", async function () {
+  it("Verifies that composite buckets work.", async function () {
+    const cse = await exp.get_case_by_uuid(test_case_uuid);
+    const ens = cse.filter({ ensemble: "iter-0" });
+    const rels = ens.surfaces().filter({ realization: true });
+    const sources = [
+      { k_name: { terms: { field: "data.name.keyword" } } },
+      { k_tagname: { terms: { field: "data.tagname.keyword" } } },
+    ];
+    const sub_aggs = {
+      agg_value_min: { min: { field: "data.bbox.zmin" } },
+      agg_value_max: { max: { field: "data.bbox.zmax" } },
+    };
+    const buckets = await rels.get_composite_buckets(sources, sub_aggs);
+    assert(buckets.length == 37);
+    assert(buckets.every((b) => b.doc_count > 0));
+    const bucket = buckets.find(
+      (b) => b.key.k_name == "Therys Fm." && b.key.k_tagname == "PHIT_Average",
+    );
+    assert(bucket.agg_value_min.value == 0.0);
+    assert(Math.abs(bucket.agg_value_max.value - 0.34) <= 0.001);
+  });
+});
+
+describe("test_composite_buckets_missing_bucket", async function () {
+  it("Verifies that composite buckets with missing bucket work.", async function () {
+    const cse = await exp.get_case_by_uuid(test_case_uuid);
+    const ens = cse.filter({ ensemble: "iter-0" });
+    const rels = ens.surfaces().filter({ realization: true });
+    const sources = [
+      { k_name: { terms: { field: "data.name.keyword" } } },
+      { k_t0: { terms: { field: "data.time.t0.value", missing_bucket: true } } },
+    ];
+    const buckets = await rels.get_composite_buckets(sources);
+    assert(buckets.length > 0);
+    // At least one surface in this ensemble has no t0 timestamp,
+    // so the missing bucket (key null) should be present.
+    assert(buckets.some((b) => b.key.k_t0 == null));
+  });
+});
