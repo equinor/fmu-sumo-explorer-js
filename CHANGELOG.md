@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.3.1...1.4.0) (2026-08-19)
+
+
+### Features
+
+* add searchcontext.get_composite_buckets, as in Python version. ([293b095](https://github.com/equinor/fmu-sumo-explorer-js/commit/293b0950d1741f33b7dec915bea9795412bf762d))
+
 ## [1.3.1](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.3.0...1.3.1) (2026-07-10)
 
 
