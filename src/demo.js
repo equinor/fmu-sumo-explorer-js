@@ -205,7 +205,7 @@ async function test11(exp) {
   console.log(JS(data));
 }
 
-async function test12() {
+async function test12(_) {
   for (const index of [
     "sumo",
     "sumoaccesslog",
@@ -220,7 +220,7 @@ async function test12() {
   }
 }
 
-async function test13() {
+async function test13(_) {
   for (const index of ["sumoaccesslog", "sumomessagelog"]) {
     let sc = await GetSearchContextBase("dev", index);
     sc = sc.filter({ complex: { range: { timestamp: { gt: "now-1M" } } } });
@@ -297,6 +297,23 @@ async function test16(exp) {
   assert(Math.abs(bucket.agg_value_max.value - 0.34) <= 0.001);
 }
 
+async function test17(_) {
+  const exp = await GetExplorer("preview");
+  const tags = await exp.tags();
+  assert(tags.length > 0);
+  assert((await exp.filter({ tag: false }).tags()).length == 0);
+  assert((await exp.filter({ tag: true }).tags()).length == tags.length);
+  assert((await exp.filter({ tag: tags[0] }).tags()).includes(tags[0]));
+}
+
+async function test18(exp) {
+  const affiliates = await exp.affiliates();
+  assert(affiliates.length > 0);
+  assert((await exp.filter({ affiliate: false }).affiliates()).length == 0);
+  assert((await exp.filter({ affiliate: true }).affiliates()).length == affiliates.length);
+  assert((await exp.filter({ affiliate: affiliates[0] }).affiliates()).includes(affiliates[0]));
+}
+
 async function main() {
   const exp = await GetExplorer("dev");
 
@@ -322,15 +339,18 @@ async function main() {
 
   // await test11(exp);
 
-  // await test12();
+  // await test12(exp);
 
-  // await test13();
+  // await test13(exp);
 
   // await test14(exp);
 
   // await test15(exp);
 
-  await test16(exp);
+  // await test16(exp);
+
+  await test17(exp);
+  await test18(exp);
 }
 
 try {

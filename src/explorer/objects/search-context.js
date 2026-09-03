@@ -120,6 +120,7 @@ const _filterspec = {
   tagname: [_gen_filter_gen, "data.tagname.keyword"],
   dataformat: [_gen_filter_gen, "data.format.keyword"],
   ensemble: [_gen_filter_gen, "fmu.ensemble.name.keyword"],
+  tag: [_gen_filter_gen, "tags.keyword"],
   realization: [_gen_filter_gen, "fmu.realization.id"],
   aggregation: [_gen_filter_gen, "fmu.aggregation.operation.keyword"],
   stage: [_gen_filter_stage, "fmu.context.stage.keyword"],
@@ -135,6 +136,7 @@ const _filterspec = {
   is_prediction: [_gen_filter_bool, "data.is_prediction"],
   standard_result: [_gen_filter_gen, "data.standard_result.name.keyword"],
   entity: [_gen_filter_gen, "fmu.entity.uuid.keyword"],
+  affiliate: [_gen_filter_gen, "access.affiliate_roles.keyword"],
   complex: [_gen_filter_complex, null],
   has: [_gen_filter_none, null],
 };
@@ -758,6 +760,15 @@ class SearchContext extends SearchContextBase {
   }
 
   /**
+   * Get list of unique tags values.
+   * @async
+   * @returns {string[]} list of tags.
+   */
+  async tags() {
+    return await this.get_field_values("tags.keyword");
+  }
+
+  /**
    * Get list of unique object tagnames in context.
    * @async
    * @returns {string[]} list of tagnames.
@@ -800,6 +811,24 @@ class SearchContext extends SearchContextBase {
    */
   async entities() {
     return this.get_field_values("fmu.entity.uuid.keyword");
+  }
+
+  /**
+   * Get list of unique asset names in context.
+   * @async
+   * @returns {string[]} list of asset names.
+   */
+  async asset_names() {
+    return this.get_field_values("access.asset.name.keyword");
+  }
+
+  /**
+   * Get list of unique affiliate role names in context.
+   * @async
+   * @returns {string[]} list of affiliate role names.
+   */
+  async affiliates() {
+    return this.get_field_values("access.affiliate_roles.keyword");
   }
 }
 
