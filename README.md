@@ -7,7 +7,7 @@ Exports a lightweight client and Explorer helpers for interacting with FMU data 
 Install locally or from npm (when published):
 
 ```
-npm install fmu-sumo-explorer
+npm install @equinor/fmu-sumo-explorer
 ```
 
 ## Import:
