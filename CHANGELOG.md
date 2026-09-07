@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.4.0...1.5.0) (2026-09-07)
+
+
+### Features
+
+* implement filter and accessors for tags and affiliate roles. ([9029e0c](https://github.com/equinor/fmu-sumo-explorer-js/commit/9029e0cbe79978a0294409d426230264724e21cc))
+
+
+### Bug Fixes
+
+* small correction to README (scoped package name). ([a9da337](https://github.com/equinor/fmu-sumo-explorer-js/commit/a9da3373bd5d950e54685e5a77e199942a8a2bc3))
+
 ## [1.4.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.3.1...1.4.0) (2026-08-19)
 
 
