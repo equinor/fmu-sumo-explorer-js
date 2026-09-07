@@ -45,11 +45,5 @@
     "eslint": "^9.39.1",
     "jsdoc": "^4.0.5",
     "mocha": "^11.7.5"
-  },
-  "overrides": {
-    "mocha": {
-      "serialize-javascript": "^7.0.5",
-      "diff": "^8.0.4"
-    }
   }
 }
