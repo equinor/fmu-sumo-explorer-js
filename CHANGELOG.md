@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.5.0...1.5.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* update dependencies. ([410d475](https://github.com/equinor/fmu-sumo-explorer-js/commit/410d4757aa67f45e3e16f525379d7f793735b59d))
+
 ## [1.5.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.4.0...1.5.0) (2026-09-07)
 
 
