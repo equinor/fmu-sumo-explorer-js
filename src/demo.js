@@ -314,6 +314,16 @@ async function test18(exp) {
   assert((await exp.filter({ affiliate: affiliates[0] }).affiliates()).includes(affiliates[0]));
 }
 
+async function test19(exp) {
+  const assets1 = await exp.assets();
+  assert(assets1.length > 0);
+  exp.sumo.invalidateAccessTokens();
+  const assets2 = await exp.assets();
+  assert(assets2.length > 0);
+  assert(assets1.length == assets2.length);
+  console.dir(assets1);
+}
+
 async function main() {
   const exp = await GetExplorer("dev");
 
@@ -349,8 +359,10 @@ async function main() {
 
   // await test16(exp);
 
-  await test17(exp);
-  await test18(exp);
+  // await test17(exp);
+  // await test18(exp);
+
+  await test19(exp);
 }
 
 try {
