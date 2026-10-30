@@ -47,7 +47,7 @@ class SumoClient {
     if (this.#credential == null) {
       return headers_in;
     }
-    if (this.#cachedtoken == null || this.#cachedtoken.expiresOnTimestamp < Date.now() - 1000) {
+    if (this.#cachedtoken == null || this.#cachedtoken.expiresOnTimestamp < Date.now() - 60000) {
       this.#cachedtoken = await this.#credential.getToken(this.#scope);
     }
 
