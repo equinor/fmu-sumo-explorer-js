@@ -9,6 +9,8 @@ import {
   EnvironmentCredential,
   InteractiveBrowserCredential,
   useIdentityPlugin,
+  serializeAuthenticationRecord,
+  deserializeAuthenticationRecord,
 } from "@azure/identity";
 
 import { cachePersistencePlugin } from "@azure/identity-cache-persistence";
@@ -33,8 +35,8 @@ async function GetCredential({ tenantId, clientId, scopes } = {}) {
     const authenticationRecordPath = path.resolve(dir, filename);
     let authenticationRecord;
     try {
-      const fileContent = fs.readFileSync(authenticationRecordPath);
-      authenticationRecord = JSON.parse(fileContent);
+      const fileContent = fs.readFileSync(authenticationRecordPath, { encoding: "utf-8" });
+      authenticationRecord = deserializeAuthenticationRecord(fileContent);
     } catch (ex) {
       // nada!
     }
@@ -49,8 +51,8 @@ async function GetCredential({ tenantId, clientId, scopes } = {}) {
 
     if (!authenticationRecord) {
       authenticationRecord = await cred.authenticate(scopes);
-      const jsonString = JSON.stringify(authenticationRecord);
-      fs.writeFileSync(authenticationRecordPath, jsonString);
+      const fileContent = serializeAuthenticationRecord(authenticationRecord);
+      fs.writeFileSync(authenticationRecordPath, fileContent, { mode: 0o600, encoding: "utf-8" });
     }
     return cred;
   }
