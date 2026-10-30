@@ -59,6 +59,13 @@ class SumoClient {
   }
 
   /**
+   * Invalidate cached access token. Next request will fetch a new token.
+   */
+  invalidateAccessTokens() {
+    this.#cachedtoken = null;
+  }
+
+  /**
    * Perform HTTP GET.
    * @param {string} url request url (relative to baseUrl)
    * @param {Object} params key/value map of parameters
