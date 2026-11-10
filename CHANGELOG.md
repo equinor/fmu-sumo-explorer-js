@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.5.1...1.6.0) (2026-11-10)
+
+
+### Features
+
+* add method to invalidate access tokens. ([537356b](https://github.com/equinor/fmu-sumo-explorer-js/commit/537356b72c3db982b1b8fde1f99b9af49ae1d640))
+
+
+### Bug Fixes
+
+* refresh access token if it's less than 60 seconds before expiry (was: 1 second). ([98c7752](https://github.com/equinor/fmu-sumo-explorer-js/commit/98c77526dba2d2cde849917d555052c004140768))
+* use correct methods for serializing/deserializing authentication records. ([e3c7be3](https://github.com/equinor/fmu-sumo-explorer-js/commit/e3c7be337e223cdd4887b089c9842f8cd8e859e7))
+
 ## [1.5.1](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.5.0...1.5.1) (2026-09-08)
 
 
