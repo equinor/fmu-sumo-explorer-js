@@ -1,5 +1,3 @@
-import assert from "node:assert";
-
 import DataObject from "./data-object.js";
 import SearchContext from "./search-context.js";
 

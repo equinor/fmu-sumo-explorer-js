@@ -27,7 +27,6 @@ const { EnvNames, GetConfig } = (() => {
       throw `Unknown environment: ${env}`;
     }
     const tenant_id = config.tenant_id;
-    const authority = config.authority;
     const { resource_id, client_id, base_url } = config.envs[env];
     const scope = `api://${resource_id}/.default`;
 
