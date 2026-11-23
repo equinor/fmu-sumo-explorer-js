@@ -1,13 +1,8 @@
 import { it, describe } from "mocha";
 
 import { GetConfig, GetCredential, SumoClient, Explorer, ExplorerObjects } from "../src/index.js";
-import { AxiosError } from "axios";
 
 import assert from "node:assert";
-import fs from "node:fs";
-import path from "node:path";
-import process from "node:process";
-import os from "node:os";
 
 function JS(v) {
   return JSON.stringify(v, null, 2);
