@@ -1,16 +1,11 @@
-import axios from "axios";
-import axiosRetry from "axios-retry";
+import axiosWithRetry from "./axios-with-retry.js";
+import process from "node:process";
 
 const WELL_KNOWN = process?.env?.SUMOCONNECTIONINFO || "https://api.sumo.equinor.com/well-known";
 
 const { EnvNames, GetConfig } = (() => {
   let config = null;
-  let _axios = axios.create();
-  axiosRetry(_axios, {
-    retryDelay: axiosRetry.exponentialDelay,
-    retryCondition: (error) =>
-      axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response?.status === 429,
-  });
+  let _axios = axiosWithRetry();
   const _getConfig = async () => {
     if (!config) {
       config = (await _axios.get(WELL_KNOWN)).data;
