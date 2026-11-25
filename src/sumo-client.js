@@ -1,6 +1,4 @@
-import axios from "axios";
-import axiosRetry from "axios-retry";
-
+import axiosWithRetry from "./axios-with-retry.js";
 import assert from "node:assert";
 
 /** Simple wrapper for making HTTP requests to a Sumo instance. */
@@ -24,16 +22,8 @@ class SumoClient {
     this.#scope = scope;
     this.#auth = auth;
     this.#baseUrl = baseUrl;
-    this.#axios = axios.create({
-      baseURL: baseUrl,
-      allowAbsoluteUrls: false,
-    });
+    this.#axios = axiosWithRetry({ config: { baseURL: baseUrl, allowAbsoluteUrls: false } });
     this.#cachedtoken = null;
-    axiosRetry(this.#axios, {
-      retryDelay: axiosRetry.exponentialDelay,
-      retryCondition: (error) =>
-        axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response?.status === 429,
-    });
   }
 
   /**
