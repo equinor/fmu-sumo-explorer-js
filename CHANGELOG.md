@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.3](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.6.0...v1.6.3) (2026-11-26)
+
+
+### Bug Fixes
+
+* switch from axios-retry to retry-axios ([56589fc](https://github.com/equinor/fmu-sumo-explorer-js/commit/56589fc2b8fa00e0585fc97515eefc818a20be83))
+
 ## [1.6.0](https://github.com/equinor/fmu-sumo-explorer-js/compare/1.5.1...1.6.0) (2026-11-10)
 
 
